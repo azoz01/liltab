@@ -1,2 +1,4 @@
 # liltab
-Package for few shot learning on tabular data
+
+## Dev setup
+You need to have Python 3.10
