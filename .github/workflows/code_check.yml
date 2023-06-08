@@ -2,11 +2,10 @@ name: Code check
 
 on:
   pull_request:
-    types: [edited, opened]
     branches: [develop, master]
 
 jobs:
-  build:
+  code_check:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
