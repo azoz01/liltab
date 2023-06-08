@@ -3,5 +3,5 @@ def test_abc():
     assert True
 
 def test_def():
-    print("def")
+    print("def123")
     assert False
