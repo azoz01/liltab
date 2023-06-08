@@ -1,10 +1,7 @@
-print("Hello world")
+def test_abc():
+    print("abc")
+    assert True
 
-1 + 2 + 3
-
-
-a = (
-    verersfddddddddddddddddddddddddddddddddddddddddddddddddddddddd
-    + dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd
-)
-fdvfsd + fsgdffdsg
+def test_def():
+    print("def")
+    assert False
