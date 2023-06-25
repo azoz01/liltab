@@ -28,7 +28,7 @@ jobs:
       
       - name: Run test
         run: |
-          pytest -vv --cov=app --junitxml=pytest.xml --cov-report=term-missing | tee pytest-coverage.txt
+          pytest -vv --cov=src --junitxml=pytest.xml --cov-report=term-missing | tee pytest-coverage.txt
       
       - name: Check test coverage
         run: |
