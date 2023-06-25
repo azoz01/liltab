@@ -38,5 +38,19 @@ jobs:
             echo "Test coverage is below the threshold ($coverage_result%). Blocking PR merge."
             exit 1
           fi
-
           
+      - name: Publish test report as an artifact
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: pytest-results
+          path: |
+            pytest-coverage.txt
+            pytest.xml
+      
+      - name: Pytest coverage comment
+        uses: MishaKav/pytest-coverage-comment@main
+        with:
+          pytest-coverage-path: pytest-coverage.txt
+          title: coverage
+          junitxml-path: pytest.xml
