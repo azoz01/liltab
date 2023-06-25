@@ -1,4 +1,4 @@
-from src.file_1 import f1, f2
+from file_1 import f1, f2
 
 def test_f1():
     assert f1() == 1
