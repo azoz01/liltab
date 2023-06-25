@@ -50,6 +50,7 @@ jobs:
             pytest.xml
       
       - name: Pytest coverage comment
+        if: always()
         uses: MishaKav/pytest-coverage-comment@main
         with:
           pytest-coverage-path: pytest-coverage.txt
