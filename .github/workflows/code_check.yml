@@ -55,3 +55,4 @@ jobs:
           pytest-coverage-path: pytest-coverage.txt
           title: coverage
           junitxml-path: pytest.xml
+          github-token: ${{github.token}}
