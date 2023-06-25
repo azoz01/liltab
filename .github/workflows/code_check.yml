@@ -28,7 +28,8 @@ jobs:
       
       - name: Run test
         run: |
-          pytest -vv --cov=app --junitxml=pytest.xml --cov-report=term-missing | tee pytest-coverage.txt
+          export PYTHONPATH=`pwd`
+          pytest -vv --cov=src --junitxml=pytest.xml --cov-report=term-missing | tee pytest-coverage.txt
       
       - name: Check test coverage
         run: |
@@ -49,8 +50,10 @@ jobs:
             pytest.xml
       
       - name: Pytest coverage comment
+        if: always()
         uses: MishaKav/pytest-coverage-comment@main
         with:
           pytest-coverage-path: pytest-coverage.txt
           title: coverage
           junitxml-path: pytest.xml
+          github-token: ${{github.token}}
