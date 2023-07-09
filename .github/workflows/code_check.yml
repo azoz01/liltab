@@ -21,7 +21,7 @@ jobs:
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
       
       - name: Check black
-        run: black .
+        run: black --line-length=79 .
       
       - name: Check flake8
         run: flake8

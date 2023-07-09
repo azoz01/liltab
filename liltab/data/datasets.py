@@ -63,7 +63,8 @@ class PandasDataset(Dataset):
 class FewShotDataset(IterableDataset):
     """
     Wrapper around Dataset, which returns data in few-shot learning manner
-    i.e. when called next(dataset) it returns properly sampled support and query sets.
+    i.e. when called next(dataset) it returns
+    properly sampled support and query sets.
     """
 
     def __init__(
