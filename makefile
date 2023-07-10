@@ -4,6 +4,8 @@ get_dependencies:
 prepare_code:
 	black --line-length=79 liltab
 	flake8 liltab
+	black --line-length=79 test
+	flake8 test
 
 run_tests:
-	export PYTHONPATH=`pwd`/liltab && pytest
+	export PYTHONPATH=`pwd` && pytest

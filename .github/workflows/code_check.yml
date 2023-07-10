@@ -28,7 +28,7 @@ jobs:
       
       - name: Run test
         run: |
-          export PYTHONPATH=`pwd`/liltab
+          export PYTHONPATH=`pwd`
           pytest -vv --cov=liltab --junitxml=pytest.xml --cov-report=term-missing | tee pytest-coverage.txt
       
       - name: Check test coverage
