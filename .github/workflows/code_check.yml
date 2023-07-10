@@ -28,8 +28,8 @@ jobs:
       
       - name: Run test
         run: |
-          export PYTHONPATH=`pwd`/src
-          pytest -vv --cov=src --junitxml=pytest.xml --cov-report=term-missing | tee pytest-coverage.txt
+          export PYTHONPATH=`pwd`/liltab
+          pytest -vv --cov=liltab --junitxml=pytest.xml --cov-report=term-missing | tee pytest-coverage.txt
       
       - name: Check test coverage
         run: |

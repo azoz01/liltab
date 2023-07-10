@@ -1,17 +1,19 @@
 # liltab
 
-## Dev setup
+## Dev
 You need to have Python 3.10 and pip.
 
 To get dependencies run: 
 ```
-pip install -r requirements.txt
+make get_dependencies
 ```
 
-## Running tests
-You need to have all requirements installed
+To format and check code with linter run:
+```
+make prepare_code
+```
 
 Run tests using following: 
 ```
-export PYTHONPATH=`pwd`/src && pytest
+export PYTHONPATH=`pwd`/liltab && pytest
 ```
