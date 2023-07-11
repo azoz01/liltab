@@ -42,7 +42,6 @@ jobs:
           fi
           
       - name: Publish test report as an artifact
-        if: always()
         uses: actions/upload-artifact@v3
         with:
           name: pytest-results
@@ -51,7 +50,6 @@ jobs:
             pytest.xml
       
       - name: Pytest coverage comment
-        if: always()
         uses: MishaKav/pytest-coverage-comment@main
         with:
           pytest-coverage-path: pytest-coverage.txt
