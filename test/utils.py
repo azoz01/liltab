@@ -1,1 +1,0 @@
-def assert_equals_float_arrays

@@ -9,3 +9,8 @@ prepare_code:
 
 run_tests:
 	export PYTHONPATH=`pwd` && pytest
+
+get_coverage: |
+	export PYTHONPATH=`pwd` && pytest -vv --cov=liltab --junitxml=pytest.xml --cov-report=term-missing | tee pytest-coverage.txt
+	cat pytest-coverage.txt
+	rm pytest-coverage.txt .coverage pytest.xml

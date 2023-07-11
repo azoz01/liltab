@@ -15,5 +15,5 @@ make prepare_code
 
 Run tests using following: 
 ```
-export PYTHONPATH=`pwd`/liltab && pytest
+make run_tests
 ```

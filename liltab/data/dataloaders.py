@@ -2,11 +2,12 @@ import numpy as np
 
 from torch import Tensor
 from torch.utils.data import Dataset
+from typing import Iterable
 
 
-class FewShotDataloader:
+class FewShotDataLoader:
     """
-    Dataloader, which iterates dataset in few-shot learning manner
+    DataLoader, which iterates dataset in few-shot learning manner
     i.e. when called next(loader) it returns episode with
     properly sampled support and query sets.
     """
@@ -48,9 +49,9 @@ class FewShotDataloader:
                 (X_support, y_support, X_query, y_query)
         """
         if self.n_episodes:
-            self.curr_episode += 1
             if self.curr_episode == self.n_episodes:
                 raise StopIteration()
+            self.curr_episode += 1
 
         all_drawn_indices = np.random.choice(
             self.n_rows, self.support_size + self.query_size, replace=False
@@ -67,19 +68,17 @@ class FewShotDataloader:
         return self.curr_episode != self.n_episodes
 
 
-class ComposedFewShotDataloader:
+class ComposedDataLoader:
     """
-    Dataloader which wraps list of FewShotDataloader objects and
+    DataLoader which wraps list of FewShotDataLoader objects and
     when next(dataloader) is called, then returns episode from
     randomly chosen one of passed dataloaders.
     """
 
-    def __init__(
-        self, dataloaders: list[FewShotDataloader], n_episodes: int = None
-    ):
+    def __init__(self, dataloaders: list[Iterable], n_episodes: int = None):
         """
         Args:
-            dataloaders (list[FewShotDataloader]): list of
+            dataloaders (list[Iterable]): list of
                 dataloaders to sample from
             n_episodes (int, optional): number of episodes.
                 If none, then iterator is without end. Defaults to None.
@@ -95,7 +94,7 @@ class ComposedFewShotDataloader:
 
     def __next__(self) -> tuple[Tensor, Tensor, Tensor, Tensor]:
         """
-        Returns support and query sets from one Dataloaders from
+        Returns support and query sets from one DataLoaders from
         randomly chosen from passed dataloaders.
 
         Returns:
@@ -103,9 +102,9 @@ class ComposedFewShotDataloader:
                 (X_support, y_support, X_query, y_query)
         """
         if self.n_episodes:
-            self.curr_episode += 1
             if self.curr_episode == self.n_episodes:
                 raise StopIteration()
+            self.curr_episode += 1
 
         dataloader_hasnt_next = True
         while dataloader_hasnt_next:

@@ -37,12 +37,16 @@ def test_indexing_dataset_returns_proper_data(resources_path):
     index = [2, 3, 6, 8, 10, 11]
 
     dataset = PandasDataset(frame_path)
-    
+
     expected_records = df.loc[index]
     actual_X, actual_y = dataset[index]
 
-    assert_almost_equal(actual_X.numpy(), expected_records[dataset.feature_columns].values)
-    assert_almost_equal(actual_y.numpy(), expected_records[dataset.target_columns].values)
+    assert_almost_equal(
+        actual_X.numpy(), expected_records[dataset.feature_columns].values
+    )
+    assert_almost_equal(
+        actual_y.numpy(), expected_records[dataset.target_columns].values
+    )
 
 
 def test_indexing_returns_dataset_with_proper_type(resources_path):
