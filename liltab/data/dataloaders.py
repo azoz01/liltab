@@ -106,11 +106,11 @@ class ComposedDataLoader:
                 raise StopIteration()
             self.curr_episode += 1
 
-        dataloader_hasnt_next = True
-        while dataloader_hasnt_next:
+        dataloader_has_next = False
+        while not dataloader_has_next:
             dataloader_idx = np.random.choice(self.n_dataloaders, 1)[0]
             dataloader = self.dataloaders[dataloader_idx]
-            dataloader_hasnt_next = not dataloader.has_next()
+            dataloader_has_next = dataloader.has_next()
         return next(dataloader)
 
     def has_next(self) -> bool:

@@ -30,16 +30,15 @@ class PandasDataset(Dataset):
         """
         self.data_path = data_path
         self.df = pd.read_csv(data_path)
-
         self.feature_columns = (
-            self.df.columns.tolist()
-            if not feature_columns
-            else feature_columns.copy()
+            feature_columns
+            if feature_columns is not None
+            else self.df.columns.tolist()[:-1]
         )
         self.target_columns = (
-            [self.feature_columns.pop(-1)]
-            if not target_columns
-            else target_columns
+            target_columns
+            if target_columns is not None
+            else [self.df.columns.tolist()[-1]]
         )
 
         self.X = torch.from_numpy(
