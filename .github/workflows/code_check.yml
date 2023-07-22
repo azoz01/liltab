@@ -35,7 +35,7 @@ jobs:
         run: flake8 test --max-line-length=100
 =======
       - name: Check black
-        run: black --line-length=100.
+        run: black --max-line-length=100.
       
       - name: Check flake8
         run: flake8 --max-line-length=100
