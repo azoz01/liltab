@@ -21,7 +21,6 @@ jobs:
           python -m pip install --upgrade pip
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
       
-<<<<<<< HEAD
       - name: Check black source code
         run: black liltab --line-length=100
 
@@ -33,13 +32,6 @@ jobs:
 
       - name: Check flake8 test code
         run: flake8 test --max-line-length=100
-=======
-      - name: Check black
-        run: black line-length=100
-      
-      - name: Check flake8
-        run: flake8 --max-line-length=100
->>>>>>> 13126b8 (Extend flake8 max line length. Fix docstings)
       
       - name: Run test
         run: |
