@@ -17,6 +17,10 @@ class Utils:
                     return True
         return False
 
+    @staticmethod
+    def run_training_iteration():
+        pass
+
 
 @fixture(scope="session")
 def utils():
