@@ -44,7 +44,7 @@ class HeterogenousAttributesNetwork(nn.Module):
                 Defaults to nn.Identity().
         """
         super().__init__()
-        self.initial_support_encoding_network = FeedForwardNetwork(
+        self.initial_features_encoding_network = FeedForwardNetwork(
             1,
             hidden_representation_size,
             n_hidden_layers,
@@ -53,7 +53,7 @@ class HeterogenousAttributesNetwork(nn.Module):
             inner_activation_function,
             output_activation_function,
         )
-        self.initial_support_representation_network = FeedForwardNetwork(
+        self.initial_features_representation_network = FeedForwardNetwork(
             hidden_representation_size,
             hidden_representation_size,
             n_hidden_layers,
@@ -81,7 +81,8 @@ class HeterogenousAttributesNetwork(nn.Module):
             inner_activation_function,
             output_activation_function,
         )
-        self.attributes_encoding_network = FeedForwardNetwork(
+
+        self.features_encoding_network = FeedForwardNetwork(
             hidden_representation_size + 1,
             hidden_representation_size,
             n_hidden_layers,
@@ -90,7 +91,7 @@ class HeterogenousAttributesNetwork(nn.Module):
             inner_activation_function,
             output_activation_function,
         )
-        self.attributes_representation_network = FeedForwardNetwork(
+        self.features_representation_network = FeedForwardNetwork(
             hidden_representation_size,
             hidden_representation_size,
             n_hidden_layers,
@@ -99,24 +100,7 @@ class HeterogenousAttributesNetwork(nn.Module):
             inner_activation_function,
             output_activation_function,
         )
-        self.responses_encoding_network = FeedForwardNetwork(
-            hidden_representation_size + 1,
-            hidden_representation_size,
-            n_hidden_layers,
-            hidden_size,
-            dropout_rate,
-            inner_activation_function,
-            output_activation_function,
-        )
-        self.responses_representation_network = FeedForwardNetwork(
-            hidden_representation_size,
-            hidden_representation_size,
-            n_hidden_layers,
-            hidden_size,
-            dropout_rate,
-            inner_activation_function,
-            output_activation_function,
-        )
+
         self.inference_encoding_network = FeedForwardNetwork(
             hidden_representation_size + 1,
             hidden_representation_size,
@@ -149,8 +133,6 @@ class HeterogenousAttributesNetwork(nn.Module):
             5. Make prediction based on representations of support set attributes and
                 responses and query set attributes representations.
         All representations calculations are done using feed forward neural networks.
-
-
         Args:
             X_support (Tensor): Support set attributes
                 with shape (n_support_observations, n_attributes)
@@ -158,21 +140,20 @@ class HeterogenousAttributesNetwork(nn.Module):
                 with shape (n_support_observations, n_responses)
             X_query (Tensor): Query set attributes
                 with shape (n_query_observations, n_attributes)
-
         Returns:
             Tensor: Inferred query set responses shaped (n_query_obervations, n_responses)
         """
-        attributes_initial_representation = self._create_initial_features_representation(
-            self.initial_support_encoding_network,
-            self.initial_support_representation_network,
+        attributes_initial_representation = self._calculate_initial_features_representation(
+            self.initial_features_encoding_network,
+            self.initial_features_representation_network,
             X_support,
         )
-        responses_initial_representation = self._create_initial_features_representation(
-            self.initial_support_encoding_network,
-            self.initial_support_representation_network,
+        responses_initial_representation = self._calculate_initial_features_representation(
+            self.initial_features_encoding_network,
+            self.initial_features_representation_network,
             y_support,
         )
-        support_set_representation = self._create_support_set_representation(
+        support_set_representation = self._calculate_support_set_representation(
             self.interaction_encoding_network,
             self.interaction_representation_network,
             X_support,
@@ -181,14 +162,14 @@ class HeterogenousAttributesNetwork(nn.Module):
             responses_initial_representation,
         )
         attributes_representation = self._calculate_features_representation(
-            self.attributes_encoding_network,
-            self.attributes_representation_network,
+            self.features_encoding_network,
+            self.features_representation_network,
             support_set_representation,
             X_support,
         )
         responses_representation = self._calculate_features_representation(
-            self.responses_encoding_network,
-            self.responses_representation_network,
+            self.features_encoding_network,
+            self.features_representation_network,
             support_set_representation,
             y_support,
         )
@@ -202,7 +183,7 @@ class HeterogenousAttributesNetwork(nn.Module):
 
         return prediction
 
-    def _create_initial_features_representation(
+    def _calculate_initial_features_representation(
         self,
         encoder_network: FeedForwardNetwork,
         representation_network: FeedForwardNetwork,
@@ -211,7 +192,6 @@ class HeterogenousAttributesNetwork(nn.Module):
         """
         Calculates initial features (can be attributes or resposnes) of given set
         using feed forward neural network.
-
         Args:
             encoder_network (FeedForwardNetwork): Feed forward network used to encode
                 features. Network takes as an input single number and returns
@@ -222,7 +202,6 @@ class HeterogenousAttributesNetwork(nn.Module):
                 vector with length hidden_representation_size.
             X (Tensor): set itself. Can be only attributes or only responses.
                 Tensor with shape (n_observations, n_features).
-
         Returns:
             Tensor: calculated initial features representation with shape
                 (n_features, hidden_representation_size) containing representations
@@ -237,7 +216,7 @@ class HeterogenousAttributesNetwork(nn.Module):
         features_representation = representation_network(encoded_input)
         return features_representation
 
-    def _create_support_set_representation(
+    def _calculate_support_set_representation(
         self,
         interaction_encoding_network: FeedForwardNetwork,
         interaction_representation_network: FeedForwardNetwork,
@@ -249,7 +228,6 @@ class HeterogenousAttributesNetwork(nn.Module):
         """
         Calculates representation of observations in given support set
         using feed-forwand neural networks.
-
         Args:
             interaction_encoding_network (FeedForwardNetwork): Feed forward neural network
                 used to encode interactions between features representations and observations
@@ -266,21 +244,20 @@ class HeterogenousAttributesNetwork(nn.Module):
             y (Tensor): responses of support set with shape (n_support_observations, n_responses).
             responses_initial_representation (Tensor): initial representation of responses
                 of support set with shape (n_responses, hidden_representation_size).
-
         Returns:
-            Tensor: calcualted representaion of support set
+            Tensor: calcualted representaion of support selfset
                 with shape (n_support_observations, hidden_representation_size).
         """
-        attributes_encoded = self._create_interaction_encoding(
+        attributes_encoded = self._calculate_interaction_encoding(
             interaction_encoding_network, attributes_initial_representation, X
         )
-        responses_encoded = self._create_interaction_encoding(
+        responses_encoded = self._calculate_interaction_encoding(
             interaction_encoding_network, responses_initial_representation, y
         )
 
         return interaction_representation_network(attributes_encoded + responses_encoded)
 
-    def _create_interaction_encoding(
+    def _calculate_interaction_encoding(
         self,
         interaction_encoding_network: FeedForwardNetwork,
         representation: Tensor,
@@ -290,7 +267,6 @@ class HeterogenousAttributesNetwork(nn.Module):
         Method used to calculate encoding of interaction encoding
         between initial representation of features in set and
         observations in this set.
-
         Args:
             interaction_encoding_network (FeedForwardNetwork): Feed forward neural network
                 used to encode interactions between features representations and observations
@@ -301,7 +277,6 @@ class HeterogenousAttributesNetwork(nn.Module):
             set_ (Tensor): set containing observations to calculate interations encoding with.
                 Can be only attributes or only features.
                 Tensor with shape (n_observations, n_features).
-
         Returns:
             Tensor: Calculated interations encoding
                 with shape (n_observations, hidden_representation_size).
@@ -324,7 +299,6 @@ class HeterogenousAttributesNetwork(nn.Module):
         """
         Method used to calculate representations of features based on
         set representation and observations from set.
-
         Args:
             features_encoding_network (FeedForwardNetwork): Feed forward neural
                 network used for calculation of encoding of concatenation
@@ -340,7 +314,6 @@ class HeterogenousAttributesNetwork(nn.Module):
                 (n_observations, hidden_representation_size).
             set_ (Tensor): set itself. Can be only attributes or only features.
                 Tensor with shape (n_observations, n_features).
-
         Returns:
             Tensor: Calculated representation of features
                 with shape (n_features, hidden_representation_size).
@@ -386,16 +359,14 @@ class HeterogenousAttributesNetwork(nn.Module):
                 [ # Second feature
                     [0.1, 0.2, 0.3, 2],
                     [0.4, 0.5, 0.6, 4],
-                    [0.7, 0.8, 0.9, 5]
+                    [0.7, 0.8, 0.9, 6]
                 ]
             ]
-
         Args:
             representation (Tensor): representation of feautres
                 with shape (n_features, hidden_representation_size)
             set_ (Tensor): set to enrich representation with
                 with shape (n_observations, n_features)
-
         Returns:
             Tensor: enriched representations with shape
                 (n_observations, n_features, hidden_representation_size + 1)
@@ -424,7 +395,6 @@ class HeterogenousAttributesNetwork(nn.Module):
         """
         Method responsible for calculation of final prediction based on support
         set representation and query set.
-
         Args:
             inference_encoding_network (FeedForwardNetwork): Network responsible
                 for encoding concatenation of support set attributes
@@ -442,7 +412,6 @@ class HeterogenousAttributesNetwork(nn.Module):
             responses_representation (Tensor): representation of responses of support set
                 with shape (n_responses, hidden_representation_size)
             X_query (Tensor): query set with shape (n_query_observations, n_attributes)
-
         Returns:
             Tensor: responses corresponding to X_query
                 with shape (n_query_observations, n_responses)
@@ -464,13 +433,21 @@ class HeterogenousAttributesNetwork(nn.Module):
         query_embedding_dim = X_query_inference_embedding.shape[1]
         attributes_representation_dim = attributes_representation.shape[1]
 
-        inference_network_input = X_query_inference_embedding.repeat(response_dim, 1).reshape(
-            response_dim, n_query_observations, inference_encoding_network.output_size
+        inference_network_input = (
+            X_query_inference_embedding.repeat(response_dim, 1)
+            .reshape(response_dim, n_query_observations, inference_encoding_network.output_size)
+            .transpose(1, 0)
+        )
+
+        responses_representation_expanded = (
+            responses_representation.unsqueeze(1)
+            .repeat(n_query_observations, 1, 1)
+            .reshape(n_query_observations, response_dim, -1)
         )
         inference_network_input = torch.concat(
             [
+                responses_representation_expanded,
                 inference_network_input,
-                responses_representation.unsqueeze(1).repeat(1, n_query_observations, 1),
             ],
             axis=2,
         )
@@ -511,13 +488,11 @@ class HeterogenousAttributesNetwork(nn.Module):
                     [0.4, 0.5, 0.6, 6]
                 ]
             ]
-
         Args:
             representation (Tensor): representation of feautres
                 with shape (n_features, hidden_representation_size)
             set_ (Tensor): set to enrich representation with
                 with shape (n_observations, n_features)
-
         Returns:
             Tensor: enriched representations with shape
                 (n_observations, n_features, hidden_representation_size + 1)

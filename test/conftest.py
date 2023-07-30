@@ -1,4 +1,5 @@
-from torch import Tensor
+from liltab.model.heterogenous_attributes_network import HeterogenousAttributesNetwork
+from torch import nn, Tensor
 from pathlib import Path
 from pytest import fixture
 
@@ -18,10 +19,23 @@ class Utils:
         return False
 
     @staticmethod
-    def run_training_iteration():
-        pass
+    def get_inference_adapter(network, X_support, y_support):
+        return InferenceAdapter(network, X_support, y_support)
 
 
 @fixture(scope="session")
 def utils():
     return Utils
+
+
+class InferenceAdapter(nn.Module):
+    def __init__(
+        self, network: HeterogenousAttributesNetwork, X_support: Tensor, y_support: Tensor
+    ):
+        super().__init__()
+        self.network = network
+        self.X_support = X_support
+        self.y_support = y_support
+
+    def forward(self, X_query: Tensor):
+        return self.network(self.X_support, self.y_support, X_query)
