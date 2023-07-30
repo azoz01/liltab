@@ -6,3 +6,4 @@ pytest_cov==4.1.0
 torch==2.0.1+cpu
 pandas==2.0.3
 numpy==1.25.0
+torchtest==0.5
