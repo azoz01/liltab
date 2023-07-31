@@ -122,7 +122,7 @@ class HeterogenousAttributesNetwork(nn.Module):
 
     def forward(self, X_support: Tensor, y_support: Tensor, X_query: Tensor) -> Tensor:
         """
-        Inference function of networks. Inference is done in following steos:
+        Inference function of network. Inference is done in following steps:
             1. Calculate initial representation for all atrributes and responses
                 in support set.
             2. Calculate representations for all observations in support set
@@ -187,7 +187,7 @@ class HeterogenousAttributesNetwork(nn.Module):
         self,
         encoder_network: FeedForwardNetwork,
         representation_network: FeedForwardNetwork,
-        X: Tensor,
+        set_: Tensor,
     ) -> Tensor:
         """
         Calculates initial features (can be attributes or resposnes) of given set
@@ -207,9 +207,9 @@ class HeterogenousAttributesNetwork(nn.Module):
                 (n_features, hidden_representation_size) containing representations
                 of attributes in rows.
         """
-        initial_tensor_shape = X.shape
+        initial_tensor_shape = set_.shape
         representation_length = encoder_network.output_size
-        network_input = X.reshape(-1, 1)
+        network_input = set_.reshape(-1, 1)
         encoded_input = encoder_network(network_input)
         encoded_input = encoded_input.reshape(*initial_tensor_shape, representation_length)
         encoded_input = encoded_input.mean(axis=0)
