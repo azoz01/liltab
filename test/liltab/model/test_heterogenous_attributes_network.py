@@ -262,6 +262,7 @@ def test_make_prediction():
 
     actual_prediction = network._make_prediction(
         network.inference_encoding_network,
+        network.inference_embedding_network,
         network.inference_network,
         attributes_representation,
         responses_representation,
@@ -276,6 +277,7 @@ def test_make_prediction():
     query_example_embedding = network.inference_encoding_network(query_example_embedding).mean(
         axis=0
     )
+    query_example_embedding = network.inference_embedding_network(query_example_embedding)
 
     inference_network_example_input = query_example_embedding.repeat(3, 1)
     inference_network_example_input = torch.concat(

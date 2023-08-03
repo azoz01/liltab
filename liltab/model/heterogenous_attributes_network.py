@@ -110,6 +110,15 @@ class HeterogenousAttributesNetwork(nn.Module):
             inner_activation_function,
             output_activation_function,
         )
+        self.inference_embedding_network = FeedForwardNetwork(
+            hidden_representation_size,
+            hidden_representation_size,
+            n_hidden_layers,
+            hidden_size,
+            dropout_rate,
+            inner_activation_function,
+            output_activation_function,
+        )
         self.inference_network = FeedForwardNetwork(
             2 * hidden_representation_size,
             1,
@@ -175,6 +184,7 @@ class HeterogenousAttributesNetwork(nn.Module):
         )
         prediction = self._make_prediction(
             self.inference_encoding_network,
+            self.inference_embedding_network,
             self.inference_network,
             attributes_representation,
             responses_representation,
@@ -387,6 +397,7 @@ class HeterogenousAttributesNetwork(nn.Module):
     def _make_prediction(
         self,
         inference_encoding_network: FeedForwardNetwork,
+        inference_embedding_network: FeedForwardNetwork,
         inference_network: FeedForwardNetwork,
         attributes_representation: Tensor,
         responses_representation: Tensor,
@@ -400,6 +411,11 @@ class HeterogenousAttributesNetwork(nn.Module):
                 for encoding concatenation of support set attributes
                 representation with query set attributes.
                 Takes as an input vector with length hidden_representation_size + 1
+                and returns vector with length hidden_representation_size.
+            inference_embedding_network (FeedForwardNetwork): Network responsible
+                for calculating representation of encoding created by
+                inference_encoding_network.
+                Takes as an input vector with length hidden_representation_size
                 and returns vector with length hidden_representation_size.
             inference_network (FeedForwardNetwork): Network responsible
                 for calculation of responses corresponding to query set based
@@ -427,6 +443,7 @@ class HeterogenousAttributesNetwork(nn.Module):
         X_query_inference_embedding = X_query_inference_embedding.reshape(*X_query.shape, -1).mean(
             axis=1
         )
+        X_query_inference_embedding = inference_embedding_network(X_query_inference_embedding)
 
         response_dim = responses_representation.shape[0]
         n_query_observations = X_query.shape[0]
