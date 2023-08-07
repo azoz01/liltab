@@ -69,7 +69,7 @@ def test_composed_data_loader_returns_proper_data_count(resources_path):
                 n_episodes=10,
             ),
         ],
-        n_episodes=10,
+        batch_size=10,
     )
     loaded_dataset = list(dataloader)
     assert len(loaded_dataset) == 10
@@ -94,7 +94,7 @@ def test_composed_data_loader_returns_from_all_loaders_properly(
                 n_episodes=7,
             ),
         ],
-        n_episodes=n_episodes,
+        batch_size=n_episodes,
     )
     loaded_dataset = list(dataloader)
     batches_lens = np.array(list(map(lambda t: t[0][1].shape[0], loaded_dataset)))
@@ -123,7 +123,7 @@ def test_composed_data_loader_returns_from_all_loaders_almost_equally(
                     n_episodes=100,
                 ),
             ],
-            n_episodes=n_episodes,
+            batch_size=n_episodes,
         )
         loaded_dataset = list(dataloader)
         batches_lens = np.array(list(map(lambda t: t[0][1].shape[0], loaded_dataset)))
@@ -150,7 +150,7 @@ def test_composed_data_loader_has_next(resources_path):
                 n_episodes=7,
             ),
         ],
-        n_episodes=n_episodes,
+        batch_size=n_episodes,
     )
 
     assert dataloader.has_next()
