@@ -38,7 +38,7 @@ class FewShotDataLoader:
         self.n_rows = len(self.dataset)
 
     def __iter__(self):
-        return self
+        return deepcopy(self)
 
     def __next__(self) -> tuple[Tensor, Tensor, Tensor, Tensor]:
         """
@@ -54,7 +54,7 @@ class FewShotDataLoader:
                 raise StopIteration()
             self.curr_episode += 1
 
-        replace = True if self.support_size + self.query_size >= self.n_rows else True
+        replace = True if self.support_size + self.query_size >= self.n_rows else False
         all_drawn_indices = np.random.choice(
             self.n_rows, self.support_size + self.query_size, replace=replace
         )

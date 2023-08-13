@@ -36,13 +36,32 @@ def test_indexing_dataset_returns_proper_data(resources_path):
     df = pd.read_csv(frame_path)
     index = [2, 3, 6, 8, 10, 11]
 
-    dataset = PandasDataset(frame_path)
+    dataset = PandasDataset(frame_path, preprocess_data=False)
 
     expected_records = df.loc[index]
     actual_X, actual_y = dataset[index]
 
     assert_almost_equal(actual_X.numpy(), expected_records[dataset.feature_columns].values)
     assert_almost_equal(actual_y.numpy(), expected_records[dataset.target_columns].values)
+
+
+def test_indexing_dataset_returns_proper_data_with_preprocessing(resources_path):
+    frame_path = resources_path / "random_df_1.csv"
+    df = pd.read_csv(frame_path)
+    df = (df - df.mean(axis=0)) / df.std(axis=0)
+    index = [2, 3, 6, 8, 10, 11]
+
+    dataset = PandasDataset(frame_path)
+
+    expected_records = df.loc[index]
+    actual_X, actual_y = dataset[index]
+
+    assert_almost_equal(
+        actual_X.numpy(), expected_records[dataset.feature_columns].values, decimal=2
+    )
+    assert_almost_equal(
+        actual_y.numpy(), expected_records[dataset.target_columns].values, decimal=2
+    )
 
 
 def test_indexing_returns_dataset_with_proper_type(resources_path):
