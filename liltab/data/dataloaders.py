@@ -56,12 +56,8 @@ class FewShotDataLoader:
         all_drawn_indices = np.random.choice(
             self.n_rows, self.support_size + self.query_size, replace=False
         )
-        support_indices = np.random.choice(
-            all_drawn_indices, self.support_size, replace=False
-        )
-        query_indices = np.array(
-            list(set(all_drawn_indices) - set(support_indices))
-        )
+        support_indices = np.random.choice(all_drawn_indices, self.support_size, replace=False)
+        query_indices = np.array(list(set(all_drawn_indices) - set(support_indices)))
         return *self.dataset[support_indices], *self.dataset[query_indices]
 
     def has_next(self) -> bool:

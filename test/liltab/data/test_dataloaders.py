@@ -97,9 +97,7 @@ def test_composed_data_loader_returns_from_all_loaders_properly(
         n_episodes=n_episodes,
     )
     loaded_dataset = list(dataloader)
-    batches_lens = np.array(
-        list(map(lambda t: t[0][1].shape[0], loaded_dataset))
-    )
+    batches_lens = np.array(list(map(lambda t: t[0][1].shape[0], loaded_dataset)))
 
     assert (batches_lens == 4).sum() == 4
     assert (batches_lens == 2).sum() == 7
@@ -128,14 +126,10 @@ def test_composed_data_loader_returns_from_all_loaders_almost_equally(
             n_episodes=n_episodes,
         )
         loaded_dataset = list(dataloader)
-        batches_lens = np.array(
-            list(map(lambda t: t[0][1].shape[0], loaded_dataset))
-        )
+        batches_lens = np.array(list(map(lambda t: t[0][1].shape[0], loaded_dataset)))
         return [(batches_lens == 4).sum(), (batches_lens == 2).sum()]
 
-    experiments_results = np.array([run_experiment() for _ in range(20)]).mean(
-        axis=0
-    )
+    experiments_results = np.array([run_experiment() for _ in range(20)]).mean(axis=0)
     assert (experiments_results >= 4).all()
 
 
