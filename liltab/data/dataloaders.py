@@ -141,7 +141,7 @@ class RepeatableOutputComposedDataLoader:
                 dataloaders to sample from
             batch_size (int, optional): size of batch.
                 Defaults to 32.
-            batch_size (int, optional): number of returned cached batch
+            num_batches (int, optional): number of returned cached batch
                 copies before iteration ends. Defaults to 1.
         """
         self.dataloaders = dataloaders
@@ -153,7 +153,7 @@ class RepeatableOutputComposedDataLoader:
 
         self.cache = OrderedDict()
         for i, dataloader in enumerate(self.dataloaders):
-            self.cache[i] = next(dataloader)
+            self.cache[i] = [next(dataloader) for _ in range(self.batch_size)]
 
     def __iter__(self):
         return deepcopy(self)
