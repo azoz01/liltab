@@ -1,10 +1,10 @@
 from liltab.model.heterogenous_attributes_network import HeterogenousAttributesNetwork
 from liltab.data.dataloaders import ComposedDataLoader, FewShotDataLoader
-from liltab.data.datasets import PandasDataset 
-from liltab.train.utils import LightningWrapper
+from liltab.data.datasets import PandasDataset
 from liltab.train.trainer import HeterogenousAttributesNetworkTrainer
 
 from copy import deepcopy
+
 
 def test_lighting_wrapper(resources_path):
     dataloader_1 = ComposedDataLoader(
@@ -24,11 +24,13 @@ def test_lighting_wrapper(resources_path):
         ],
         batch_size=10,
     )
-    
+
     dataloader_2 = deepcopy(dataloader_1)
     dataloader_3 = deepcopy(dataloader_2)
-    
+
     model = HeterogenousAttributesNetwork()
-    
-    trainer = HeterogenousAttributesNetworkTrainer(n_epochs = 1, gradient_clipping = True, learning_rate = 1e-3, weight_decay = 0.1)
+
+    trainer = HeterogenousAttributesNetworkTrainer(
+        n_epochs=1, gradient_clipping=True, learning_rate=1e-3, weight_decay=0.1
+    )
     trainer.train_and_test(model, dataloader_1, dataloader_2, dataloader_3)

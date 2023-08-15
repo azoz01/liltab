@@ -3,7 +3,8 @@ import numpy as np
 
 from liltab.data.datasets import PandasDataset, RandomFeaturesPandasDataset
 from numpy.testing import assert_almost_equal
-from torch import Tensor, float32, equal
+from torch import Tensor, float32
+
 
 def test_dataset_initializes_default_columns(resources_path):
     frame_path = resources_path / "random_df_1.csv"
@@ -76,36 +77,41 @@ def test_indexing_returns_dataset_with_proper_type(resources_path):
     assert type(y) is Tensor
     assert y.dtype == float32
 
+
 def test_random_features_pandas_dataset_has_no_null(resources_path):
     frame_path = resources_path / "random_df_1.csv"
     dataset = RandomFeaturesPandasDataset(frame_path, preprocess_data=True)
     assert dataset.df.isnull().sum().sum() == 0
-    
+
+
 def test_random_features_pandas_dataset_is_standarized(resources_path):
     frame_path = resources_path / "random_df_1.csv"
     dataset = RandomFeaturesPandasDataset(frame_path, preprocess_data=True)
     assert (np.abs(dataset.df.std() - 1) < 1e-1).all()
     assert (np.abs(dataset.df.mean()) < 1e-6).all()
-    
+
+
 def test_random_features_pandas_dataset_change_features(resources_path):
     frame_path = resources_path / "random_df_1.csv"
     persist_features_iter = 3
-    dataset = RandomFeaturesPandasDataset(frame_path, preprocess_data=True, persist_features_iter=persist_features_iter)
-    
+    dataset = RandomFeaturesPandasDataset(
+        frame_path, preprocess_data=True, persist_features_iter=persist_features_iter
+    )
+
     previous_features = np.ndarray([])
     previous_target = np.ndarray([])
-    
+
     features_change_cnt = 0
     target_change_cnt = 0
-   
+
     for _ in range(int(1e2)):
         dataset[0]
         features_change_cnt += int(not np.array_equal(previous_features, dataset.features))
         target_change_cnt += int(not np.array_equal(previous_target, dataset.target))
-                
+
         previous_features = dataset.features
         previous_target = dataset.target
-    
+
     print(features_change_cnt)
     assert np.abs(features_change_cnt / int(1e2) - 1 / persist_features_iter) < 2e-1
     assert np.abs(target_change_cnt / int(1e2) - 1 / persist_features_iter) < 2e-1
