@@ -129,10 +129,7 @@ class RepeatableOutputComposedDataLoader:
     of data. Useful with test/validation datasets.
     """
 
-    def __init__(
-        self,
-        dataloaders: list[Iterable]
-    ):
+    def __init__(self, dataloaders: list[Iterable]):
         """
         Args:
             dataloaders (list[Iterable]): list of

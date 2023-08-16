@@ -108,7 +108,7 @@ class RandomFeaturesPandasDataset(Dataset):
         if self.persist_features_counter == 0:
             self.persist_features_counter = self.persist_features_iter
             col_idx = np.arange(self.n_columns)
-            features_size = np.random.randint(low=1, high=self.n_columns+1)
+            features_size = np.random.randint(low=1, high=self.n_columns + 1)
             features_idx = np.random.choice(col_idx, features_size)
             remaining_idx = np.setdiff1d(col_idx, features_idx, assume_unique=True)
             target_idx = np.random.choice(remaining_idx, 1)

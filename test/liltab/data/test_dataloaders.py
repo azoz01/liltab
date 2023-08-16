@@ -2,7 +2,6 @@
 # Czy hasnext dziala dobrze
 
 import numpy as np
-import pytest
 
 from liltab.data.datasets import PandasDataset
 from liltab.data.dataloaders import (
