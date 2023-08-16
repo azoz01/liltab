@@ -85,8 +85,8 @@ class ComposedDataLoader:
                 dataloaders to sample from
             batch_size (int, optional): size of batch.
                 Defaults to 32.
-            batch_size (int, optional): number of returned cached batch
-                copies before iteration ends. Defaults to 1.
+            batch_size (int, optional): number of returned batches.
+                Defaults to 1.
         """
         self.dataloaders = dataloaders
         self.batch_size = batch_size
@@ -133,11 +133,7 @@ class RepeatableOutputComposedDataLoader:
         """
         Args:
             dataloaders (list[Iterable]): list of
-                dataloaders to sample from
-            batch_size (int, optional): size of batch.
-                Defaults to 32.
-            num_batches (int, optional): number of returned cached batch
-                copies before iteration ends. Defaults to 1.
+                dataloaders to sample from.
         """
         self.dataloaders = dataloaders
 
