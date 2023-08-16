@@ -90,7 +90,7 @@ class RandomFeaturesPandasDataset(Dataset):
         self.data_path = data_path
         self.persist_features_iter = persist_features_iter
 
-        self.df = pd.read_csv(data_path).fillna(0)
+        self.df = pd.read_csv(data_path)
         self.columns = self.df.columns.values
         self.n_columns = len(self.columns)
 
@@ -108,9 +108,9 @@ class RandomFeaturesPandasDataset(Dataset):
         if self.persist_features_counter == 0:
             self.persist_features_counter = self.persist_features_iter
             col_idx = np.arange(self.n_columns)
-            features_size = np.random.choice(np.arange(1, self.n_columns))
+            features_size = np.random.randint(low=1, high=self.n_columns+1)
             features_idx = np.random.choice(col_idx, features_size)
-            remaining_idx = np.array(list(set(col_idx) - set(features_idx)))
+            remaining_idx = np.setdiff1d(col_idx, features_idx, assume_unique=True)
             target_idx = np.random.choice(remaining_idx, 1)
             self.features, self.target = self.columns[features_idx], self.columns[target_idx]
         self.persist_features_counter -= 1

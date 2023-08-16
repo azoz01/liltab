@@ -162,33 +162,7 @@ def test_composed_data_loader_returns_from_all_loaders_almost_equally(
     assert (experiments_results >= 14).all()
 
 
-def test_repeatable_output_composed_data_loader_init_cache(resources_path):
-    batch_size = 32
-    dataloader = RepeatableOutputComposedDataLoader(
-        [
-            FewShotDataLoader(
-                PandasDataset(resources_path / "random_df_1.csv"),
-                5,
-                6,
-                n_episodes=100,
-            ),
-            FewShotDataLoader(
-                PandasDataset(resources_path / "random_df_2.csv"),
-                5,
-                6,
-                n_episodes=100,
-            ),
-        ],
-        batch_size=batch_size,
-    )
-
-    for idx, sample in dataloader.cache.items():
-        assert sample is not None
-        assert len(sample) == 32
-
-
 def test_repeatable_output_composed_data_loader_repeat_samples(resources_path, utils):
-    batch_size = 8
     dataloader = RepeatableOutputComposedDataLoader(
         [
             FewShotDataLoader(
@@ -203,45 +177,16 @@ def test_repeatable_output_composed_data_loader_repeat_samples(resources_path, u
                 6,
                 n_episodes=100,
             ),
-        ],
-        batch_size=batch_size,
-        num_batches=2,
+        ]
     )
 
     dataloader_1 = next(dataloader)
     dataloader_2 = next(dataloader)
 
     for sample_1, sample_2 in zip(dataloader_1, dataloader_2):
-        for idx in range(len(sample_1)):
-            X_support_1, y_support_1, X_query_1, y_query_1 = sample_1[idx]
-            X_support_2, y_support_2, X_query_2, y_query_2 = sample_2[idx]
-            assert utils.tensors_have_common_rows(X_support_1, X_support_2)
-            assert utils.tensors_have_common_rows(y_support_1, y_support_2)
-            assert utils.tensors_have_common_rows(X_query_1, X_query_2)
-            assert utils.tensors_have_common_rows(y_query_1, y_query_2)
-
-
-def test_repeatable_output_composed_data_loader_stop_iteration(resources_path):
-    num_batches = 8
-    dataloader = RepeatableOutputComposedDataLoader(
-        [
-            FewShotDataLoader(
-                PandasDataset(resources_path / "random_df_1.csv"),
-                4,
-                6,
-                n_episodes=100,
-            ),
-            FewShotDataLoader(
-                PandasDataset(resources_path / "random_df_2.csv"),
-                4,
-                6,
-                n_episodes=100,
-            ),
-        ],
-        num_batches=num_batches,
-    )
-
-    _ = [next(dataloader) for _ in range(8)]
-
-    with pytest.raises(StopIteration):
-        _ = next(dataloader)
+        X_support_1, y_support_1, X_query_1, y_query_1 = sample_1
+        X_support_2, y_support_2, X_query_2, y_query_2 = sample_2
+        assert utils.tensors_have_common_rows(X_support_1, X_support_2)
+        assert utils.tensors_have_common_rows(y_support_1, y_support_2)
+        assert utils.tensors_have_common_rows(X_query_1, X_query_2)
+        assert utils.tensors_have_common_rows(y_query_1, y_query_2)

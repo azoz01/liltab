@@ -131,9 +131,7 @@ class RepeatableOutputComposedDataLoader:
 
     def __init__(
         self,
-        dataloaders: list[Iterable],
-        batch_size: int = 32,
-        num_batches: int = 1,
+        dataloaders: list[Iterable]
     ):
         """
         Args:
@@ -145,21 +143,16 @@ class RepeatableOutputComposedDataLoader:
                 copies before iteration ends. Defaults to 1.
         """
         self.dataloaders = dataloaders
-        self.batch_size = batch_size
 
         self.batch_counter = 0
-        self.num_batches = num_batches
         self.n_dataloaders = len(dataloaders)
 
         self.cache = OrderedDict()
         for i, dataloader in enumerate(self.dataloaders):
-            self.cache[i] = [next(dataloader) for _ in range(self.batch_size)]
+            self.cache[i] = next(dataloader)
 
     def __iter__(self):
         return deepcopy(self)
 
     def __next__(self):
-        if self.batch_counter == self.num_batches:
-            raise StopIteration()
-        self.batch_counter += 1
         return [sample for _, sample in self.cache.items()]
