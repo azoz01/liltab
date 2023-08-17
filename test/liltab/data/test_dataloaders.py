@@ -4,7 +4,11 @@
 import numpy as np
 
 from liltab.data.datasets import PandasDataset
-from liltab.data.dataloaders import FewShotDataLoader, ComposedDataLoader
+from liltab.data.dataloaders import (
+    FewShotDataLoader,
+    ComposedDataLoader,
+    RepeatableOutputComposedDataLoader,
+)
 
 
 def test_few_shot_data_loader_returns_proper_episodes_count(resources_path):
@@ -49,11 +53,12 @@ def test_few_shot_data_loader_has_next(resources_path):
     dataloader = FewShotDataLoader(dataset, 4, 6, n_episodes=10)
 
     assert dataloader.has_next()
-    list(dataloader)
+    for _ in range(10):
+        next(dataloader)
     assert not dataloader.has_next()
 
 
-def test_composed_data_loader_returns_proper_data_count(resources_path):
+def test_composed_data_loader_returns_batch_with_proper_size(resources_path):
     dataloader = ComposedDataLoader(
         [
             FewShotDataLoader(
@@ -69,10 +74,33 @@ def test_composed_data_loader_returns_proper_data_count(resources_path):
                 n_episodes=10,
             ),
         ],
-        n_episodes=10,
+        batch_size=10,
+    )
+    loaded_dataset = list(dataloader)[0]
+    assert len(loaded_dataset) == 10
+
+
+def test_composed_data_loader_returns_proper_batch_count(resources_path):
+    dataloader = ComposedDataLoader(
+        [
+            FewShotDataLoader(
+                PandasDataset(resources_path / "random_df_1.csv"),
+                4,
+                6,
+                n_episodes=100,
+            ),
+            FewShotDataLoader(
+                PandasDataset(resources_path / "random_df_2.csv"),
+                4,
+                6,
+                n_episodes=100,
+            ),
+        ],
+        batch_size=10,
+        num_batches=5,
     )
     loaded_dataset = list(dataloader)
-    assert len(loaded_dataset) == 10
+    assert len(loaded_dataset) == 5
 
 
 def test_composed_data_loader_returns_from_all_loaders_properly(
@@ -94,10 +122,10 @@ def test_composed_data_loader_returns_from_all_loaders_properly(
                 n_episodes=7,
             ),
         ],
-        n_episodes=n_episodes,
+        batch_size=n_episodes,
     )
     loaded_dataset = list(dataloader)
-    batches_lens = np.array(list(map(lambda t: t[0][1].shape[0], loaded_dataset)))
+    batches_lens = np.array(list(map(lambda t: t[0][1].shape[0], loaded_dataset[0])))
 
     assert (batches_lens == 4).sum() == 4
     assert (batches_lens == 2).sum() == 7
@@ -107,7 +135,7 @@ def test_composed_data_loader_returns_from_all_loaders_almost_equally(
     resources_path,
 ):
     def run_experiment():
-        n_episodes = 10
+        batch_size = 32
         dataloader = ComposedDataLoader(
             [
                 FewShotDataLoader(
@@ -123,36 +151,41 @@ def test_composed_data_loader_returns_from_all_loaders_almost_equally(
                     n_episodes=100,
                 ),
             ],
-            n_episodes=n_episodes,
+            batch_size=batch_size,
         )
-        loaded_dataset = list(dataloader)
-        batches_lens = np.array(list(map(lambda t: t[0][1].shape[0], loaded_dataset)))
+        batch = list(dataloader)[0]
+        batches_lens = np.array(list(map(lambda t: t[0][1].shape[0], batch)))
         return [(batches_lens == 4).sum(), (batches_lens == 2).sum()]
 
     experiments_results = np.array([run_experiment() for _ in range(20)]).mean(axis=0)
-    assert (experiments_results >= 4).all()
+    assert (experiments_results >= 14).all()
 
 
-def test_composed_data_loader_has_next(resources_path):
-    n_episodes = 10
-    dataloader = ComposedDataLoader(
+def test_repeatable_output_composed_data_loader_repeat_samples(resources_path, utils):
+    dataloader = RepeatableOutputComposedDataLoader(
         [
             FewShotDataLoader(
                 PandasDataset(resources_path / "random_df_1.csv"),
                 4,
                 6,
-                n_episodes=4,
+                n_episodes=100,
             ),
             FewShotDataLoader(
                 PandasDataset(resources_path / "random_df_2.csv"),
                 4,
                 6,
-                n_episodes=7,
+                n_episodes=100,
             ),
-        ],
-        n_episodes=n_episodes,
+        ]
     )
 
-    assert dataloader.has_next()
-    list(dataloader)
-    assert not dataloader.has_next()
+    dataloader_1 = next(dataloader)
+    dataloader_2 = next(dataloader)
+
+    for sample_1, sample_2 in zip(dataloader_1, dataloader_2):
+        X_support_1, y_support_1, X_query_1, y_query_1 = sample_1
+        X_support_2, y_support_2, X_query_2, y_query_2 = sample_2
+        assert utils.tensors_have_common_rows(X_support_1, X_support_2)
+        assert utils.tensors_have_common_rows(y_support_1, y_support_2)
+        assert utils.tensors_have_common_rows(X_query_1, X_query_2)
+        assert utils.tensors_have_common_rows(y_query_1, y_query_2)

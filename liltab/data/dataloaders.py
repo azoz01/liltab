@@ -1,8 +1,9 @@
 import numpy as np
 
+from copy import deepcopy
 from torch import Tensor
 from torch.utils.data import Dataset
-from typing import Iterable
+from typing import Iterable, OrderedDict
 
 
 class FewShotDataLoader:
@@ -37,7 +38,7 @@ class FewShotDataLoader:
         self.n_rows = len(self.dataset)
 
     def __iter__(self):
-        return self
+        return deepcopy(self)
 
     def __next__(self) -> tuple[Tensor, Tensor, Tensor, Tensor]:
         """
@@ -53,8 +54,9 @@ class FewShotDataLoader:
                 raise StopIteration()
             self.curr_episode += 1
 
+        replace = True if self.support_size + self.query_size >= self.n_rows else False
         all_drawn_indices = np.random.choice(
-            self.n_rows, self.support_size + self.query_size, replace=False
+            self.n_rows, self.support_size + self.query_size, replace=replace
         )
         support_indices = np.random.choice(all_drawn_indices, self.support_size, replace=False)
         query_indices = np.array(list(set(all_drawn_indices) - set(support_indices)))
@@ -66,29 +68,43 @@ class FewShotDataLoader:
 
 class ComposedDataLoader:
     """
-    DataLoader which wraps list of FewShotDataLoader objects and
+    DataLoader which wraps list of data loaders objects and
     when next(dataloader) is called, then returns episode from
     randomly chosen one of passed dataloaders.
     """
 
-    def __init__(self, dataloaders: list[Iterable], n_episodes: int = None):
+    def __init__(
+        self,
+        dataloaders: list[Iterable],
+        batch_size: int = 32,
+        num_batches: int = 1,
+    ):
         """
         Args:
             dataloaders (list[Iterable]): list of
                 dataloaders to sample from
-            n_episodes (int, optional): number of episodes.
-                If none, then iterator is without end. Defaults to None.
+            batch_size (int, optional): size of batch.
+                Defaults to 32.
+            batch_size (int, optional): number of returned batches.
+                Defaults to 1.
         """
         self.dataloaders = dataloaders
-        self.n_episodes = n_episodes
+        self.batch_size = batch_size
 
-        self.curr_episode = 0
+        self.counter = 0
+        self.num_batches = num_batches
         self.n_dataloaders = len(dataloaders)
 
     def __iter__(self):
-        return self
+        return deepcopy(self)
 
-    def __next__(self) -> tuple[Tensor, Tensor, Tensor, Tensor]:
+    def __next__(self):
+        if self.counter == self.num_batches:
+            raise StopIteration()
+        self.counter += 1
+        return [self._get_single_example() for _ in range(self.batch_size)]
+
+    def _get_single_example(self) -> tuple[Tensor, Tensor, Tensor, Tensor]:
         """
         Returns support and query sets from one DataLoaders from
         randomly chosen from passed dataloaders.
@@ -97,11 +113,6 @@ class ComposedDataLoader:
             tuple[Tensor, Tensor, Tensor, Tensor]:
                 (X_support, y_support, X_query, y_query)
         """
-        if self.n_episodes:
-            if self.curr_episode == self.n_episodes:
-                raise StopIteration()
-            self.curr_episode += 1
-
         dataloader_has_next = False
         while not dataloader_has_next:
             dataloader_idx = np.random.choice(self.n_dataloaders, 1)[0]
@@ -109,5 +120,32 @@ class ComposedDataLoader:
             dataloader_has_next = dataloader.has_next()
         return next(dataloader)
 
-    def has_next(self) -> bool:
-        return self.curr_episode != self.n_episodes
+
+class RepeatableOutputComposedDataLoader:
+    """
+    DataLoader which wraps list of data loaders objects
+    and takes one observation from each of them and when
+    next(dataloader) is called it returns always the same batch
+    of data. Useful with test/validation datasets.
+    """
+
+    def __init__(self, dataloaders: list[Iterable]):
+        """
+        Args:
+            dataloaders (list[Iterable]): list of
+                dataloaders to sample from.
+        """
+        self.dataloaders = dataloaders
+
+        self.batch_counter = 0
+        self.n_dataloaders = len(dataloaders)
+
+        self.cache = OrderedDict()
+        for i, dataloader in enumerate(self.dataloaders):
+            self.cache[i] = next(dataloader)
+
+    def __iter__(self):
+        return deepcopy(self)
+
+    def __next__(self):
+        return [sample for _, sample in self.cache.items()]
