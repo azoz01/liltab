@@ -6,13 +6,16 @@ import seaborn as sns
 from pathlib import Path
 from typing import Any, Dict
 
+
 def save_pickle(path: Path, ob: Any):
     with open(path, "wb") as f:
         pkl.dump(ob, f)
 
+
 def save_json(path: Path, ob: Dict):
     with open(path, "w") as f:
         json.dump(ob, f, indent=4)
+
 
 def generate_plots(path: Path, metrics_history: Dict):
     path.mkdir(parents=True)

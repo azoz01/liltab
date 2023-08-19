@@ -1,4 +1,3 @@
-import datetime
 import typer
 import yaml
 import pytorch_lightning as pl
@@ -83,12 +82,13 @@ def main(
     )
 
     logger.info("Saving results")
-    results_path = Path("results") / (config["name"] + "_" +datetime.now().isoformat())
+    results_path = Path("results") / (config["name"] + "_" + datetime.now().isoformat())
     results_path.mkdir(parents=True)
     save_pickle(results_path / "trainer.pkl", trainer)
     save_pickle(results_path / "wrapper.pkl", wrapper)
     save_json(results_path / "metrics_history.json", wrapper.metrics_history)
     generate_plots(results_path / "plots", wrapper.metrics_history)
+
 
 if __name__ == "__main__":
     app()
