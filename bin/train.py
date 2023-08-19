@@ -1,7 +1,10 @@
+import datetime
 import typer
 import yaml
 import pytorch_lightning as pl
+import warnings
 
+from datetime import datetime
 from liltab.data.datasets import PandasDataset, RandomFeaturesPandasDataset
 from liltab.data.dataloaders import (
     FewShotDataLoader,
@@ -11,29 +14,29 @@ from liltab.data.dataloaders import (
 from liltab.data.factory import ComposedDataLoaderFactory
 from liltab.model.heterogenous_attributes_network import HeterogenousAttributesNetwork
 from liltab.train.trainer import HeterogenousAttributesNetworkTrainer
+from loguru import logger
 from typing_extensions import Annotated
 from pathlib import Path
+from utils import save_json, save_pickle, generate_plots
 
+warnings.filterwarnings("ignore")
 app = typer.Typer()
 
 
 @app.command(help="Trains network on heterogenous attribute spaces.")
 def main(
-    train_data_path: Annotated[Path, typer.Option(..., help="Path to train data.")],
-    val_data_path: Annotated[Path, typer.Option(..., help="Path to val data.")],
-    test_data_path: Annotated[Path, typer.Option(..., help="Path to test data.")],
     config_path: Annotated[Path, typer.Option(..., help="Path to experiment configuration.")],
     seed: Annotated[int, typer.Option(..., help="Seed")] = 123,
 ):
     pl.seed_everything(seed)
 
-    print("Loading config")
+    logger.info("Loading config")
     with open(config_path) as f:
         config = yaml.load(f, Loader=yaml.CLoader)
 
-    print("Loading data")
+    logger.info("Loading data")
     train_loader = ComposedDataLoaderFactory.create_composed_dataloader_from_path(
-        train_data_path,
+        Path(config["train_data_path"]),
         RandomFeaturesPandasDataset,
         {},
         FewShotDataLoader,
@@ -42,7 +45,7 @@ def main(
         batch_size=config["batch_size"],
     )
     val_loader = ComposedDataLoaderFactory.create_composed_dataloader_from_path(
-        val_data_path,
+        Path(config["val_data_path"]),
         PandasDataset,
         {},
         FewShotDataLoader,
@@ -51,7 +54,7 @@ def main(
         batch_size=config["batch_size"],
     )
     test_loader = ComposedDataLoaderFactory.create_composed_dataloader_from_path(
-        test_data_path,
+        Path(config["test_data_path"]),
         PandasDataset,
         {},
         FewShotDataLoader,
@@ -60,7 +63,7 @@ def main(
         batch_size=config["batch_size"],
     )
 
-    print("Creating model")
+    logger.info("Creating model")
     model = HeterogenousAttributesNetwork(
         hidden_representation_size=config["hidden_representation_size"],
         n_hidden_layers=config["n_hidden_layers"],
@@ -74,11 +77,18 @@ def main(
         weight_decay=config["weight_decay"],
     )
 
-    print("Training model")
-    model, test_results = trainer.train_and_test(
+    logger.info("Training model")
+    wrapper, test_results = trainer.train_and_test(
         model=model, train_loader=train_loader, val_loader=val_loader, test_loader=test_loader
     )
 
+    logger.info("Saving results")
+    results_path = Path("results") / (config["name"] + "_" +datetime.now().isoformat())
+    results_path.mkdir(parents=True)
+    save_pickle(results_path / "trainer.pkl", trainer)
+    save_pickle(results_path / "wrapper.pkl", wrapper)
+    save_json(results_path / "metrics_history.json", wrapper.metrics_history)
+    generate_plots(results_path / "plots", wrapper.metrics_history)
 
 if __name__ == "__main__":
     app()

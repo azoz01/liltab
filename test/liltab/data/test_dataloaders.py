@@ -179,8 +179,8 @@ def test_repeatable_output_composed_data_loader_repeat_samples(resources_path, u
         ]
     )
 
-    dataloader_1 = next(dataloader)
-    dataloader_2 = next(dataloader)
+    dataloader_1 = list(dataloader)[0]
+    dataloader_2 = list(dataloader)[0]
 
     for sample_1, sample_2 in zip(dataloader_1, dataloader_2):
         X_support_1, y_support_1, X_query_1, y_query_1 = sample_1

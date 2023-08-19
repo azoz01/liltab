@@ -24,7 +24,9 @@ class HeterogenousAttributesNetworkTrainer:
             weight_decay (float): weight decay during training.
         """
         self.trainer = pl.Trainer(
-            max_epochs=n_epochs, gradient_clip_val=1 if gradient_clipping else 0
+            max_epochs=n_epochs,
+            gradient_clip_val=1 if gradient_clipping else 0,
+            check_val_every_n_epoch=n_epochs // 1000 if n_epochs > 1000 else 1,
         )
         self.learning_rate = learning_rate
         self.weight_decay = weight_decay
@@ -35,7 +37,7 @@ class HeterogenousAttributesNetworkTrainer:
         train_loader: ComposedDataLoader | RepeatableOutputComposedDataLoader,
         val_loader: ComposedDataLoader | RepeatableOutputComposedDataLoader,
         test_loader: ComposedDataLoader | RepeatableOutputComposedDataLoader,
-    ) -> tuple[HeterogenousAttributesNetwork, list[dict[str, float]]]:
+    ) -> tuple[LightningWrapper, list[dict[str, float]]]:
         """
         Method used to train and test model.
 
@@ -57,4 +59,4 @@ class HeterogenousAttributesNetworkTrainer:
         )
         self.trainer.fit(model_wrapper, train_loader, val_loader)
         test_results = self.trainer.test(model_wrapper, test_loader)
-        return model_wrapper.model, test_results
+        return model_wrapper, test_results

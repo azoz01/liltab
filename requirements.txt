@@ -10,3 +10,5 @@ torchtest==0.5
 scikit-learn==1.3.0
 pytorch_lightning==2.0.6
 typer==0.9.0
+loguru==0.7.0
+seaborn==0.12.2
