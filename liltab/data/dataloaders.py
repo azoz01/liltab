@@ -129,7 +129,7 @@ class RepeatableOutputComposedDataLoader:
     of data. Useful with test/validation datasets.
     """
 
-    def __init__(self, dataloaders: list[Iterable]):
+    def __init__(self, dataloaders: list[Iterable], *args, **kwargs):
         """
         Args:
             dataloaders (list[Iterable]): list of
@@ -140,6 +140,7 @@ class RepeatableOutputComposedDataLoader:
         self.batch_counter = 0
         self.n_dataloaders = len(dataloaders)
 
+        self.loaded = False
         self.cache = OrderedDict()
         for i, dataloader in enumerate(self.dataloaders):
             self.cache[i] = next(dataloader)
@@ -148,4 +149,7 @@ class RepeatableOutputComposedDataLoader:
         return deepcopy(self)
 
     def __next__(self):
+        if self.loaded:
+            raise StopIteration()
+        self.loaded = True
         return [sample for _, sample in self.cache.items()]
