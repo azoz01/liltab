@@ -34,17 +34,21 @@ class LightningWrapper(pl.LightningModule):
         self.weight_decay = weight_decay
         self.metrics_history = dict()
 
-    def training_step(self, batch: list[tuple[Tensor, Tensor, Tensor, Tensor]], batch_idx) -> float:
+        self.example_input = None
+        self.save_hyperparameters()
+
+    def training_step(
+        self, batch: list[tuple[Tensor, Tensor, Tensor, Tensor]], batch_idx
+    ) -> float:
+        if batch_idx == 0:
+            self.example_input = batch[0][:3]
+
         loss_value = 0.0
         for example in batch:
             X_support, y_support, X_query, y_query = example
             prediction = self.model(X_support, y_support, X_query)
             loss_value += self.loss(prediction, y_query)
 
-        self.log("train_loss", loss_value, prog_bar=True)
-        self.metrics_history["train_loss"] = self.metrics_history.get("train_loss", []) + [
-            loss_value.item()
-        ]
         return loss_value
 
     def validation_step(
@@ -55,24 +59,21 @@ class LightningWrapper(pl.LightningModule):
             X_support, y_support, X_query, y_query = example
             prediction = self.model(X_support, y_support, X_query)
             loss_value += self.loss(prediction, y_query)
-        self.log("val_loss", loss_value, prog_bar=True)
-        self.metrics_history["val_loss"] = self.metrics_history.get("val_loss", []) + [
-            loss_value.item()
-        ]
 
         return loss_value
 
-    def test_step(self, batch: list[tuple[Tensor, Tensor, Tensor, Tensor]], batch_idx) -> float:
+    def test_step(
+        self, batch: list[tuple[Tensor, Tensor, Tensor, Tensor]], batch_idx
+    ) -> float:
         loss_value = 0.0
         for example in batch:
             X_support, y_support, X_query, y_query = example
             prediction = self.model(X_support, y_support, X_query)
             loss_value += self.loss(prediction, y_query)
-        self.log("test_loss", loss_value, prog_bar=True)
-        self.metrics_history["test_loss"] = self.metrics_history.get("test_loss", []) + [
-            loss_value.item()
-        ]
+
         return loss_value
 
     def configure_optimizers(self) -> Any:
-        return optim.Adam(self.parameters(), lr=self.learning_rate, weight_decay=self.weight_decay)
+        return optim.Adam(
+            self.parameters(), lr=self.learning_rate, weight_decay=self.weight_decay
+        )

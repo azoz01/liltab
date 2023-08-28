@@ -13,6 +13,7 @@ from liltab.data.dataloaders import (
 from liltab.data.factory import ComposedDataLoaderFactory
 from liltab.model.heterogenous_attributes_network import HeterogenousAttributesNetwork
 from liltab.train.trainer import HeterogenousAttributesNetworkTrainer
+from liltab.train.logger import TensorBoardLogger, FileLogger
 from loguru import logger
 from typing_extensions import Annotated
 from pathlib import Path
@@ -24,7 +25,16 @@ app = typer.Typer()
 
 @app.command(help="Trains network on heterogenous attribute spaces.")
 def main(
-    config_path: Annotated[Path, typer.Option(..., help="Path to experiment configuration.")],
+    config_path: Annotated[
+        Path, typer.Option(..., help="Path to experiment configuration.")
+    ],
+    logger_type: Annotated[
+        str,
+        typer.Option(
+            ...,
+            help="typer of logger. tb=[tensorboard], flat=[flat file], both=[tensoboard and flat file]",
+        ),
+    ] = "both",
     seed: Annotated[int, typer.Option(..., help="Seed")] = 123,
 ):
     pl.seed_everything(seed)
@@ -69,25 +79,31 @@ def main(
         hidden_size=config["hidden_size"],
         dropout_rate=config["dropout_rate"],
     )
+
+    if logger_type == "tb":
+        loggers = [TensorBoardLogger("results/tensorboard")]
+    elif logger_type == "flat":
+        loggers = [FileLogger("results/flat")]
+    elif logger_type == "both":
+        loggers = [TensorBoardLogger("results/tensorflow"), FileLogger("results/flat")]
+    else:
+        raise ValueError("logger_type must from [tb, flat, both]")
+
     trainer = HeterogenousAttributesNetworkTrainer(
         n_epochs=config["num_epochs"],
         gradient_clipping=config["gradient_clipping"],
         learning_rate=config["learning_rate"],
         weight_decay=config["weight_decay"],
+        loggers=loggers,
     )
 
     logger.info("Training model")
     wrapper, test_results = trainer.train_and_test(
-        model=model, train_loader=train_loader, val_loader=val_loader, test_loader=test_loader
+        model=model,
+        train_loader=train_loader,
+        val_loader=val_loader,
+        test_loader=test_loader,
     )
-
-    logger.info("Saving results")
-    results_path = Path("results") / (config["name"] + "_" + datetime.now().isoformat())
-    results_path.mkdir(parents=True)
-    save_pickle(results_path / "trainer.pkl", trainer)
-    save_pickle(results_path / "wrapper.pkl", wrapper)
-    save_json(results_path / "metrics_history.json", wrapper.metrics_history)
-    generate_plots(results_path / "plots", wrapper.metrics_history)
 
 
 if __name__ == "__main__":
