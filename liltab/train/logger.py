@@ -2,6 +2,7 @@ from argparse import Namespace
 from typing import Any, Dict, Optional, Union, List
 from lightning_fabric.utilities.types import _PATH
 from pytorch_lightning.loggers import TensorBoardLogger as TBLogger, Logger
+import torch
 
 from liltab.model.heterogenous_attributes_network import HeterogenousAttributesNetwork
 from ..model.heterogenous_attributes_network import HeterogenousAttributesNetwork
@@ -9,53 +10,34 @@ from abc import abstractmethod, ABC
 from torch import Tensor
 from pathlib import Path
 from datetime import datetime
+from torch.profiler import profile
 
 
-class CustomLogger(ABC):
-    @abstractmethod
-    def log_train_value(self, value: float) -> None:
-        pass
-
-    @abstractmethod
-    def log_test_value(self, value: float) -> None:
-        pass
-
-    @abstractmethod
-    def log_validate_value(self, value: float) -> None:
-        pass
-
-    @abstractmethod
-    def log_model_graph(
-        self,
-        model: HeterogenousAttributesNetwork,
-        model_input: List[Tensor],
-    ) -> None:
-        pass
-
-    @abstractmethod
-    def log_weights(self, weights) -> None:
-        pass
-
-    @abstractmethod
-    def log_hparams(self, hparams) -> None:
-        pass
-
-    # def add_hparams(
-    # self, hparam_dict, metric_dict, hparam_domain_discrete=None, run_name=None
-    # ):
-
-
-class TensorBoardLogger(TBLogger, CustomLogger):
+class TensorBoardLogger(TBLogger):
     def __init__(
         self,
         save_dir: _PATH = "results/tensorboard",
         version: str = None,
+        use_profiler: bool = False,
         **kwargs: Any
     ):
         if version is None:
             _version = "experiment " + datetime.now().strftime("%m-%d-%Y-%H:%M:%S")
         else:
             _version = version
+
+        self.use_profiler = use_profiler
+
+        if self.use_profiler:
+            self.profiler = profile(
+                schedule=torch.profiler.schedule(wait=1, warmup=1, active=3, repeat=2),
+                on_trace_ready=torch.profiler.tensorboard_trace_handler(
+                    Path("./results") / "tensorboard" / _version
+                ),
+                record_shapes=True,
+                with_stack=True,
+            )
+
         super().__init__(
             save_dir,
             name=None,
@@ -84,8 +66,20 @@ class TensorBoardLogger(TBLogger, CustomLogger):
     def log_weights(self, weights) -> None:
         self.experiment.add_histogram("weights and biases", weights)
 
+    def start_profile_step(self):
+        if self.use_profiler:
+            self.profiler.step()
 
-class FileLogger(CustomLogger):
+    def end_profile(self):
+        if self.use_profiler:
+            self.profiler.stop()
+
+    def start_profile(self):
+        if self.use_profiler:
+            self.profiler.start()
+
+
+class FileLogger:
     def __init__(self, save_dir: str = "results/flat", version: str = None) -> None:
         super().__init__()
         self.save_dir = save_dir
@@ -108,11 +102,6 @@ class FileLogger(CustomLogger):
         self.test_loss_path = experiment_path / "test.csv"
         self.test_loss_path.touch(exist_ok=True)
 
-        self.hyperparam_path = experiment_path / "hyperparams.yaml"
-        self.hyperparam_path.touch(exist_ok=True)
-
-        self.hyperparams = {}
-
     def log_train_value(self, value: float) -> None:
         with open(self.train_loss_path, "a") as f:
             f.write(str(value.item()))
@@ -127,11 +116,3 @@ class FileLogger(CustomLogger):
         with open(self.validate_loss_path, "a") as f:
             f.write(str(value.item()))
             f.write("\n")
-
-    def log_model_graph(
-        self, model: HeterogenousAttributesNetwork, model_input: List[Tensor]
-    ) -> None:
-        return None
-
-    def log_weights(self, weights) -> None:
-        return None

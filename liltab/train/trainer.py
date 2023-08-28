@@ -12,7 +12,7 @@ from liltab.data.dataloaders import (
     RepeatableOutputComposedDataLoader,
 )
 from .utils import LightningWrapper
-from .logger import TensorBoardLogger, FileLogger, CustomLogger
+from .logger import TensorBoardLogger, FileLogger
 from datetime import datetime
 
 
@@ -27,7 +27,8 @@ class HeterogenousAttributesNetworkTrainer:
         gradient_clipping: bool,
         learning_rate: float,
         weight_decay: float,
-        loggers: Optional[List[CustomLogger]] = None,
+        file_logger: FileLogger,
+        tb_logger: TensorBoardLogger,
     ):
         """
         Args:
@@ -36,7 +37,9 @@ class HeterogenousAttributesNetworkTrainer:
             learning_rate (float): learning rate during training.
             weight_decay (float): weight decay during training.
         """
-        callbacks = HeterogenousAttributesNetworkCallback(loggers=loggers)
+        callbacks = HeterogenousAttributesNetworkCallback(
+            file_logger=file_logger, tb_logger=tb_logger
+        )
         model_path = Path("results")
         model_path = (
             model_path / "models" / datetime.now().strftime("%m-%d-%Y-%H:%M:%S")
@@ -91,32 +94,38 @@ class HeterogenousAttributesNetworkTrainer:
 
 
 class HeterogenousAttributesNetworkCallback(Callback):
-    def __init__(self, loggers: CustomLogger) -> None:
+    def __init__(self, file_logger: FileLogger, tb_logger: TensorBoardLogger) -> None:
         super().__init__()
-        self.loggers = loggers
+        self.file_logger = file_logger
+        self.tb_logger = tb_logger
 
     def on_train_batch_end(self, trainer, pl_module, outputs, batch, batch_idx):
         loss_value = outputs["loss"]
         pl_module.log("train_loss", loss_value, prog_bar=True, logger=False)
-        for logger in self.loggers:
-            logger.log_train_value(loss_value)
+        self.file_logger.log_train_value(loss_value)
+        self.tb_logger.log_train_value(loss_value)
 
     def on_validation_batch_end(
         self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx=0
     ) -> None:
         loss_value = outputs
         pl_module.log("val_loss", loss_value, prog_bar=True, logger=False)
-        for logger in self.loggers:
-            logger.log_validate_value(loss_value)
+        self.file_logger.log_validate_value(loss_value)
+        self.tb_logger.log_validate_value(loss_value)
 
     def on_test_batch_end(
         self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx=0
     ) -> None:
         loss_value = outputs
         pl_module.log("test_loss", loss_value, prog_bar=True, logger=False)
-        for logger in self.loggers:
-            logger.log_test_value(loss_value)
+        self.file_logger.log_test_value(loss_value)
+        self.tb_logger.log_test_value(loss_value)
 
     def on_fit_end(self, trainer, pl_module):
-        for logger in self.loggers:
-            logger.log_model_graph(pl_module.model, pl_module.example_input)
+        self.tb_logger.log_model_graph(pl_module.model, pl_module.example_input)
+
+    def on_train_epoch_end(self, trainer, pl_module) -> None:
+        self.tb_logger.start_profile_step()
+
+    def on_fit_start(self, trainer, pl_module) -> None:
+        self.tb_logger.start_profile()

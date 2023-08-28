@@ -35,6 +35,9 @@ def main(
             help="typer of logger. tb=[tensorboard], flat=[flat file], both=[tensoboard and flat file]",
         ),
     ] = "both",
+    use_profiler: Annotated[
+        str, typer.Option(..., help="use profiler (take long time), yes or no")
+    ] = "no",
     seed: Annotated[int, typer.Option(..., help="Seed")] = 123,
 ):
     pl.seed_everything(seed)
@@ -81,11 +84,18 @@ def main(
     )
 
     if logger_type == "tb":
-        loggers = [TensorBoardLogger("results/tensorboard")]
+        tb_logger = TensorBoardLogger(
+            "results/tensorboard", use_profiler=True if use_profiler == "yes" else False
+        )
+        file_logger = None
     elif logger_type == "flat":
-        loggers = [FileLogger("results/flat")]
+        tb_logger = None
+        file_logger = FileLogger("results/flat")
     elif logger_type == "both":
-        loggers = [TensorBoardLogger("results/tensorflow"), FileLogger("results/flat")]
+        tb_logger = TensorBoardLogger(
+            "results/tensorboard", use_profiler=True if use_profiler == "yes" else False
+        )
+        file_logger = FileLogger("results/flat")
     else:
         raise ValueError("logger_type must from [tb, flat, both]")
 
@@ -94,7 +104,8 @@ def main(
         gradient_clipping=config["gradient_clipping"],
         learning_rate=config["learning_rate"],
         weight_decay=config["weight_decay"],
-        loggers=loggers,
+        file_logger=file_logger,
+        tb_logger=tb_logger,
     )
 
     logger.info("Training model")
