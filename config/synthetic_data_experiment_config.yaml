@@ -1,5 +1,6 @@
 name: "synthetic"
-num_epochs: 5
+classification: false
+num_epochs: 10
 learning_rate: 0.001
 weight_decay: 0.0001
 batch_size: 256

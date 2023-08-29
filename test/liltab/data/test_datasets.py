@@ -1,5 +1,6 @@
-import pandas as pd
 import numpy as np
+import pandas as pd
+import pytest
 
 from liltab.data.datasets import PandasDataset, RandomFeaturesPandasDataset
 from numpy.testing import assert_almost_equal
@@ -65,6 +66,28 @@ def test_indexing_dataset_returns_proper_data_with_preprocessing(resources_path)
     )
 
 
+def test_class_forbids_one_hot_with_multiple_targets(resources_path):
+    frame_path = resources_path / "random_df_1.csv"
+    df = pd.read_csv(frame_path)
+    feture_columns = df.columns[:-2]
+    target_columns = df.columns[-2:]
+    with pytest.raises(ValueError):
+        PandasDataset(frame_path, feture_columns, target_columns, encode_categorical_target=True)
+
+
+def test_preprocessing_when_target_categorical(resources_path):
+    frame_path = resources_path / "random_df_3.csv"
+    df = pd.read_csv(frame_path)
+    expected_X = df.drop(columns=["class"])
+    expected_X = (expected_X - expected_X.mean(axis=0)) / expected_X.std(axis=0)
+
+    dataset = PandasDataset(frame_path, encode_categorical_target=True)
+
+    assert dataset.y.shape == (df.shape[0], df["class"].max())
+    assert_almost_equal(dataset.y.sum(axis=1).numpy(), np.ones(df.shape[0]))
+    assert_almost_equal(dataset.X.numpy(), expected_X.values, decimal=2)
+
+
 def test_indexing_returns_dataset_with_proper_type(resources_path):
     frame_path = resources_path / "random_df_1.csv"
     index = [1, 2, 3]
@@ -112,6 +135,5 @@ def test_random_features_pandas_dataset_change_features(resources_path):
         previous_features = dataset.features
         previous_target = dataset.target
 
-    print(features_change_cnt)
     assert np.abs(features_change_cnt / int(1e2) - 1 / persist_features_iter) < 2e-1
     assert np.abs(target_change_cnt / int(1e2) - 1 / persist_features_iter) < 2e-1

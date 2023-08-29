@@ -85,6 +85,27 @@ def test_forward_returns_proper_shape(utils):
     assert prediction.shape == (27, 3)
 
 
+def test_forward_returns_probabilities_when_classifier():
+    X_support = Tensor(np.random.uniform(size=(5, 10)))
+    y_support = Tensor([[1, 0, 0], [1, 0, 0], [0, 0, 1], [0, 1, 0], [0, 1, 0]])
+    X_query = Tensor(np.random.uniform(size=(27, 10)))
+
+    network = HeterogenousAttributesNetwork(
+        hidden_representation_size=32,
+        n_hidden_layers=3,
+        hidden_size=32,
+        dropout_rate=0.1,
+        inner_activation_function=nn.ReLU(),
+        output_activation_function=nn.Identity(),
+        is_classifier=True,
+    )
+
+    prediction = network(X_support, y_support, X_query)
+
+    assert (prediction >= 0).all()
+    testing.assert_close(prediction.sum(axis=1), torch.ones(27))
+
+
 def test_all_network_params_are_trained(utils):
     X_support = Tensor(np.random.uniform(size=(5, 10)))
     y_support = Tensor(np.random.uniform(size=(5, 3)))

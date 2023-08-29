@@ -22,6 +22,7 @@ class PandasDataset(Dataset):
         feature_columns: list[str] = None,
         target_columns: list[str] = None,
         preprocess_data: bool = True,
+        encode_categorical_target: bool = False,
     ):
         """
         Args:
@@ -34,8 +35,12 @@ class PandasDataset(Dataset):
             preprocess_data (bool, optional): If true, then imputes data
                 using mean strategy and standardizes using StandardScaler.
                 Defaults to True.
+            encode_categorical_target(bool, optional): if True, then target column
+                will be encoded using one-hot. Works only with single target variable.
+                Default to False.
         """
         self.data_path = data_path
+        self.encode_categorical_target = encode_categorical_target
         self.df = pd.read_csv(data_path)
         self.feature_columns = (
             feature_columns if feature_columns is not None else self.df.columns.tolist()[:-1]
@@ -44,14 +49,25 @@ class PandasDataset(Dataset):
             target_columns if target_columns is not None else [self.df.columns.tolist()[-1]]
         )
 
+        if len(self.target_columns) > 1 and self.encode_categorical_target:
+            raise ValueError("One-hot encoding is supported only for single target")
+
         if preprocess_data:
             self.preprocessing_pipeline = get_preprocessing_pipeline()
-            self.df = pd.DataFrame(
-                self.preprocessing_pipeline.fit_transform(self.df), columns=self.df.columns
-            )
-
+            if self.encode_categorical_target:
+                self.df.loc[:, self.feature_columns] = self.preprocessing_pipeline.fit_transform(
+                    self.df[self.feature_columns]
+                )
+            else:
+                self.df = pd.DataFrame(
+                    self.preprocessing_pipeline.fit_transform(self.df), columns=self.df.columns
+                )
         self.X = torch.from_numpy(self.df[self.feature_columns].to_numpy()).type(torch.float32)
-        self.y = torch.from_numpy(self.df[self.target_columns].to_numpy()).type(torch.float32)
+
+        self.y = self.df[self.target_columns]
+        if self.encode_categorical_target:
+            self.y = pd.get_dummies(self.y.astype("category"))
+        self.y = torch.from_numpy(self.y.to_numpy()).type(torch.float32)
 
     def __getitem__(self, idx: list[int]) -> tuple[Tensor, Tensor]:
         X = self.X[idx]

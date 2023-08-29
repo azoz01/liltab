@@ -1,4 +1,5 @@
 import torch
+import torch.nn.functional as F
 
 from torch import nn, Tensor
 from typing import Callable
@@ -24,6 +25,7 @@ class HeterogenousAttributesNetwork(nn.Module):
         dropout_rate: int = 0.1,
         inner_activation_function: Callable = nn.ReLU(),
         output_activation_function: Callable = nn.Identity(),
+        is_classifier: bool = False,
     ):
         """
         Args:
@@ -42,6 +44,8 @@ class HeterogenousAttributesNetwork(nn.Module):
             output_activation_function (Callable, optional): Output activation function
                 of networks used during inference. Should be function from torch.nn.
                 Defaults to nn.Identity().
+            is_classifier (bool, optional): If true then output of the network will be
+                passed through softmax function. Defaults to False.
         """
         super().__init__()
         self.initial_features_encoding_network = FeedForwardNetwork(
@@ -62,7 +66,6 @@ class HeterogenousAttributesNetwork(nn.Module):
             inner_activation_function,
             output_activation_function,
         )
-
         self.interaction_encoding_network = FeedForwardNetwork(
             hidden_representation_size + 1,
             hidden_representation_size,
@@ -128,6 +131,7 @@ class HeterogenousAttributesNetwork(nn.Module):
             inner_activation_function,
             output_activation_function,
         )
+        self.is_classifier = is_classifier
 
     def forward(self, X_support: Tensor, y_support: Tensor, X_query: Tensor) -> Tensor:
         """
@@ -190,6 +194,8 @@ class HeterogenousAttributesNetwork(nn.Module):
             responses_representation,
             X_query,
         )
+        if self.is_classifier:
+            prediction = F.softmax(prediction, dim=1)
 
         return prediction
 
