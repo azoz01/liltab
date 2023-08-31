@@ -37,11 +37,11 @@ class HeterogenousAttributesNetworkTrainer:
             file_logger (FileLogger|None): csv logger
             tb_logger (TensorBoardLogger|None): tensorboard logger
         """
-        callbacks = HeterogenousAttributesNetworkCallback(
-            file_logger=file_logger, tb_logger=tb_logger
-        )
+        callbacks = LoggerCallback(file_logger=file_logger, tb_logger=tb_logger)
         model_path = Path("results")
-        model_path = model_path / "models" / datetime.now().strftime("%m-%d-%Y-%H:%M:%S")
+        model_path = (
+            model_path / "models" / datetime.now().strftime("%m-%d-%Y-%H:%M:%S")
+        )
         model_checkpoints = ModelCheckpoint(
             dirpath=model_path,
             filename="model-{epoch}-{val_loss:.2f}",
@@ -91,7 +91,7 @@ class HeterogenousAttributesNetworkTrainer:
         return model_wrapper, test_results
 
 
-class HeterogenousAttributesNetworkCallback(Callback):
+class LoggerCallback(Callback):
     def __init__(
         self,
         file_logger: Union[FileLogger, None] = None,
