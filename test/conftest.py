@@ -50,8 +50,8 @@ class InferenceAdapter(nn.Module):
         return self.network(self.X_support, self.y_support, X_query)
 
 
-# def pytest_sessionfinish(session, exitstatus):
-#     rmtree(Path("test") / "results")
+def pytest_sessionfinish(session, exitstatus):
+    rmtree(Path("test") / "results")
 
 
 def pytest_sessionstart(session):
