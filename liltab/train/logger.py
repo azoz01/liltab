@@ -1,16 +1,16 @@
-from argparse import Namespace
-from typing import Any, Dict, Optional, Union, List
-from lightning_fabric.utilities.types import _PATH
-from pytorch_lightning.loggers import TensorBoardLogger as TBLogger, Logger
 import torch
 
-from liltab.model.heterogenous_attributes_network import HeterogenousAttributesNetwork
-from ..model.heterogenous_attributes_network import HeterogenousAttributesNetwork
-from abc import abstractmethod, ABC
 from torch import Tensor
 from pathlib import Path
 from datetime import datetime
 from torch.profiler import profile
+
+from typing import Any, List
+from lightning_fabric.utilities.types import _PATH
+from pytorch_lightning.loggers import TensorBoardLogger as TBLogger
+
+from liltab.model.heterogenous_attributes_network import HeterogenousAttributesNetwork
+from ..model.heterogenous_attributes_network import HeterogenousAttributesNetwork
 
 
 class TensorBoardLogger(TBLogger):
@@ -66,17 +66,17 @@ class TensorBoardLogger(TBLogger):
     def log_weights(self, weights) -> None:
         self.experiment.add_histogram("weights and biases", weights)
 
-    def start_profile_step(self):
+    def profile_start(self):
         if self.use_profiler:
-            self.profiler.step()
+            self.profiler.start()
 
-    def end_profile(self):
+    def profile_end(self):
         if self.use_profiler:
             self.profiler.stop()
 
-    def start_profile(self):
+    def profile_step(self):
         if self.use_profiler:
-            self.profiler.start()
+            self.profiler.step()
 
 
 class FileLogger:
@@ -91,16 +91,16 @@ class FileLogger:
 
         experiment_path = Path(save_dir)
         experiment_path = experiment_path / self.version
-        experiment_path.mkdir(exist_ok=True)
+        experiment_path.mkdir(exist_ok=False, parents=True)
 
         self.train_loss_path = experiment_path / "train.csv"
-        self.train_loss_path.touch(exist_ok=True)
+        self.train_loss_path.touch(exist_ok=False)
 
         self.validate_loss_path = experiment_path / "validate.csv"
-        self.validate_loss_path.touch(exist_ok=True)
+        self.validate_loss_path.touch(exist_ok=False)
 
         self.test_loss_path = experiment_path / "test.csv"
-        self.test_loss_path.touch(exist_ok=True)
+        self.test_loss_path.touch(exist_ok=False)
 
     def log_train_value(self, value: float) -> None:
         with open(self.train_loss_path, "a") as f:

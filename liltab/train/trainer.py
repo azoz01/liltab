@@ -1,10 +1,9 @@
 import pytorch_lightning as pl
-from pytorch_lightning.utilities.types import STEP_OUTPUT
-import torch
 
-from typing import Any, Optional, List
 from pytorch_lightning.callbacks import Callback, ModelCheckpoint
 from pathlib import Path
+from datetime import datetime
+from typing import Union
 
 from liltab.model.heterogenous_attributes_network import HeterogenousAttributesNetwork
 from liltab.data.dataloaders import (
@@ -13,7 +12,6 @@ from liltab.data.dataloaders import (
 )
 from .utils import LightningWrapper
 from .logger import TensorBoardLogger, FileLogger
-from datetime import datetime
 
 
 class HeterogenousAttributesNetworkTrainer:
@@ -27,8 +25,8 @@ class HeterogenousAttributesNetworkTrainer:
         gradient_clipping: bool,
         learning_rate: float,
         weight_decay: float,
-        file_logger: FileLogger,
-        tb_logger: TensorBoardLogger,
+        file_logger: Union[FileLogger, None] = None,
+        tb_logger: Union[TensorBoardLogger, None] = None,
     ):
         """
         Args:
@@ -36,6 +34,8 @@ class HeterogenousAttributesNetworkTrainer:
             gradient_clipping (bool): If true, then gradient clipping is applied
             learning_rate (float): learning rate during training.
             weight_decay (float): weight decay during training.
+            file_logger (FileLogger|None): csv logger
+            tb_logger (TensorBoardLogger|None): tensorboard logger
         """
         callbacks = HeterogenousAttributesNetworkCallback(
             file_logger=file_logger, tb_logger=tb_logger
@@ -94,7 +94,16 @@ class HeterogenousAttributesNetworkTrainer:
 
 
 class HeterogenousAttributesNetworkCallback(Callback):
-    def __init__(self, file_logger: FileLogger, tb_logger: TensorBoardLogger) -> None:
+    def __init__(
+        self,
+        file_logger: Union[FileLogger, None] = None,
+        tb_logger: Union[TensorBoardLogger, None] = None,
+    ) -> None:
+        """
+        Args:
+            file_logger (FileLogger|None): csv logger
+            tb_logger (TensorBoardLogger|None): tensorboard logger
+        """
         super().__init__()
         self.file_logger = file_logger
         self.tb_logger = tb_logger
@@ -102,30 +111,46 @@ class HeterogenousAttributesNetworkCallback(Callback):
     def on_train_batch_end(self, trainer, pl_module, outputs, batch, batch_idx):
         loss_value = outputs["loss"]
         pl_module.log("train_loss", loss_value, prog_bar=True, logger=False)
-        self.file_logger.log_train_value(loss_value)
-        self.tb_logger.log_train_value(loss_value)
+
+        if self.file_logger is not None:
+            self.file_logger.log_train_value(loss_value)
+
+        if self.tb_logger is not None:
+            self.tb_logger.log_train_value(loss_value)
 
     def on_validation_batch_end(
         self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx=0
     ) -> None:
         loss_value = outputs
         pl_module.log("val_loss", loss_value, prog_bar=True, logger=False)
-        self.file_logger.log_validate_value(loss_value)
-        self.tb_logger.log_validate_value(loss_value)
+
+        if self.file_logger is not None:
+            self.file_logger.log_validate_value(loss_value)
+
+        if self.tb_logger is not None:
+            self.tb_logger.log_validate_value(loss_value)
 
     def on_test_batch_end(
         self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx=0
     ) -> None:
         loss_value = outputs
         pl_module.log("test_loss", loss_value, prog_bar=True, logger=False)
-        self.file_logger.log_test_value(loss_value)
-        self.tb_logger.log_test_value(loss_value)
+
+        if self.file_logger is not None:
+            self.file_logger.log_test_value(loss_value)
+
+        if self.tb_logger is not None:
+            self.tb_logger.log_test_value(loss_value)
 
     def on_fit_end(self, trainer, pl_module):
-        self.tb_logger.log_model_graph(pl_module.model, pl_module.example_input)
+        if self.tb_logger is not None:
+            self.tb_logger.log_model_graph(pl_module.model, pl_module.example_input)
+            self.tb_logger.profile_end()
 
     def on_train_epoch_end(self, trainer, pl_module) -> None:
-        self.tb_logger.start_profile_step()
+        if self.tb_logger is not None:
+            self.tb_logger.profile_step()
 
     def on_fit_start(self, trainer, pl_module) -> None:
-        self.tb_logger.start_profile()
+        if self.tb_logger is not None:
+            self.tb_logger.profile_start()

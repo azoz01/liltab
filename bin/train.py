@@ -36,7 +36,11 @@ def main(
         ),
     ] = "both",
     use_profiler: Annotated[
-        str, typer.Option(..., help="use profiler (take long time), yes or no")
+        str,
+        typer.Option(
+            ...,
+            help="use profiler (take long time, 8-10 epoches suggested), yes or no; requires tensorboard (logger-type=[tb|both])",
+        ),
     ] = "no",
     seed: Annotated[int, typer.Option(..., help="Seed")] = 123,
 ):
@@ -109,7 +113,7 @@ def main(
     )
 
     logger.info("Training model")
-    wrapper, test_results = trainer.train_and_test(
+    trainer.train_and_test(
         model=model,
         train_loader=train_loader,
         val_loader=val_loader,
