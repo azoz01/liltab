@@ -41,9 +41,7 @@ class HeterogenousAttributesNetworkTrainer:
             file_logger=file_logger, tb_logger=tb_logger
         )
         model_path = Path("results")
-        model_path = (
-            model_path / "models" / datetime.now().strftime("%m-%d-%Y-%H:%M:%S")
-        )
+        model_path = model_path / "models" / datetime.now().strftime("%m-%d-%Y-%H:%M:%S")
         model_checkpoints = ModelCheckpoint(
             dirpath=model_path,
             filename="model-{epoch}-{val_loss:.2f}",

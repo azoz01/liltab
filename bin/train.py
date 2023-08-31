@@ -3,7 +3,6 @@ import yaml
 import pytorch_lightning as pl
 import warnings
 
-from datetime import datetime
 from liltab.data.datasets import PandasDataset, RandomFeaturesPandasDataset
 from liltab.data.dataloaders import (
     FewShotDataLoader,
@@ -17,7 +16,6 @@ from liltab.train.logger import TensorBoardLogger, FileLogger
 from loguru import logger
 from typing_extensions import Annotated
 from pathlib import Path
-from utils import save_json, save_pickle, generate_plots
 
 warnings.filterwarnings("ignore")
 app = typer.Typer()
@@ -25,21 +23,21 @@ app = typer.Typer()
 
 @app.command(help="Trains network on heterogenous attribute spaces.")
 def main(
-    config_path: Annotated[
-        Path, typer.Option(..., help="Path to experiment configuration.")
-    ],
+    config_path: Annotated[Path, typer.Option(..., help="Path to experiment configuration.")],
     logger_type: Annotated[
         str,
         typer.Option(
             ...,
-            help="typer of logger. tb=[tensorboard], flat=[flat file], both=[tensoboard and flat file]",
+            help="""typer of logger. tb=[tensorboard],
+            flat=[flat file], both=[tensoboard and flat file]""",
         ),
     ] = "both",
     use_profiler: Annotated[
         str,
         typer.Option(
             ...,
-            help="use profiler (take long time, 8-10 epoches suggested), yes or no; requires tensorboard (logger-type=[tb|both])",
+            help="""""use profiler (take long time, 8-10 epoches suggested),
+            yes or no; requires tensorboard (logger-type=[tb|both])""",
         ),
     ] = "no",
     seed: Annotated[int, typer.Option(..., help="Seed")] = 123,

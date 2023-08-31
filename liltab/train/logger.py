@@ -9,7 +9,6 @@ from typing import Any, List
 from lightning_fabric.utilities.types import _PATH
 from pytorch_lightning.loggers import TensorBoardLogger as TBLogger
 
-from liltab.model.heterogenous_attributes_network import HeterogenousAttributesNetwork
 from ..model.heterogenous_attributes_network import HeterogenousAttributesNetwork
 
 

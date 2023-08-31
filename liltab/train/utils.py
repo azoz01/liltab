@@ -37,9 +37,7 @@ class LightningWrapper(pl.LightningModule):
         self.example_input = None
         self.save_hyperparameters()
 
-    def training_step(
-        self, batch: list[tuple[Tensor, Tensor, Tensor, Tensor]], batch_idx
-    ) -> float:
+    def training_step(self, batch: list[tuple[Tensor, Tensor, Tensor, Tensor]], batch_idx) -> float:
         if batch_idx == 0:
             self.example_input = batch[0][:3]
 
@@ -62,9 +60,7 @@ class LightningWrapper(pl.LightningModule):
 
         return loss_value
 
-    def test_step(
-        self, batch: list[tuple[Tensor, Tensor, Tensor, Tensor]], batch_idx
-    ) -> float:
+    def test_step(self, batch: list[tuple[Tensor, Tensor, Tensor, Tensor]], batch_idx) -> float:
         loss_value = 0.0
         for example in batch:
             X_support, y_support, X_query, y_query = example
@@ -74,6 +70,4 @@ class LightningWrapper(pl.LightningModule):
         return loss_value
 
     def configure_optimizers(self) -> Any:
-        return optim.Adam(
-            self.parameters(), lr=self.learning_rate, weight_decay=self.weight_decay
-        )
+        return optim.Adam(self.parameters(), lr=self.learning_rate, weight_decay=self.weight_decay)
