@@ -1,4 +1,4 @@
-name: "openml"
+name: "same_domain"
 num_epochs: 10
 learning_rate: 0.001
 weight_decay: 0.0001
@@ -13,6 +13,6 @@ n_hidden_layers: 3
 hidden_size: 32
 dropout_rate: 0.1
 
-train_data_path: data/02_openml/train
-val_data_path: data/02_openml/val
-test_data_path: data/02_openml/test
+train_data_path: data/03_same_domain/train
+val_data_path: data/03_same_domain/val
+test_data_path: data/03_same_domain/test
