@@ -44,6 +44,12 @@ jobs:
           export PYTHONPATH=`pwd`
           pytest -vv --cov=liltab --junitxml=pytest.xml --cov-report=term-missing | tee pytest-coverage.txt
       
+      - name: Check pytest suceeded
+        if: always()
+        uses: pmeier/pytest-results-action@main
+        with:
+          path: pytest.xml
+      
       - name: Check test coverage
         run: |
           coverage_threshold=80
