@@ -118,7 +118,7 @@ def test_all_network_params_are_trained(utils):
         n_hidden_layers=3,
         hidden_size=32,
         dropout_rate=0.1,
-        inner_activation_function=nn.ReLU(),
+        inner_activation_function=nn.ELU(),
         output_activation_function=nn.Identity(),
     )
 
@@ -128,8 +128,8 @@ def test_all_network_params_are_trained(utils):
         model=inference_adapter,
         loss_fn=F.cross_entropy,
         optim=optim.Adam(
-            inference_adapter.parameters(), weight_decay=10
-        ),  # Fixes vanishing gradients, only test purposes
+            inference_adapter.parameters()
+        ),
         batch=(X_query, y_query),
         device="cpu:0",
     )

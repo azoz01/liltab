@@ -4,7 +4,8 @@ num_epochs: 5
 learning_rate: 0.001
 weight_decay: 0.0001
 batch_size: 37
-gradient_clipping: True
+gradient_clipping: False
+early_stopping: True
 
 support_size: 3
 query_size: 29

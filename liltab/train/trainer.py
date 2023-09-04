@@ -25,6 +25,7 @@ class HeterogenousAttributesNetworkTrainer:
         gradient_clipping: bool,
         learning_rate: float,
         weight_decay: float,
+        early_stopping: bool = False,
         file_logger: Union[FileLogger, None] = None,
         tb_logger: Union[TensorBoardLogger, None] = None,
     ):
@@ -34,6 +35,8 @@ class HeterogenousAttributesNetworkTrainer:
             gradient_clipping (bool): If true, then gradient clipping is applied
             learning_rate (float): learning rate during training.
             weight_decay (float): weight decay during training.
+            early_stopping (Optional, bool): if True, then early stopping with
+                patience n_epochs // 5 is applied. Defaults to False.
             file_logger (FileLogger|None): csv logger
             tb_logger (TensorBoardLogger|None): tensorboard logger
         """
@@ -48,13 +51,16 @@ class HeterogenousAttributesNetworkTrainer:
             every_n_epochs=10,
             save_last=True,
         )
-        early_stopping = EarlyStopping(monitor="val_loss", mode="min", patience=n_epochs // 5)
+        callbacks = [callbacks, model_checkpoints]
+        if early_stopping:
+            early_stopping = EarlyStopping(monitor="val_loss", mode="min", patience=n_epochs // 5)
+            callbacks.append(early_stopping)
 
         self.trainer = pl.Trainer(
             max_epochs=n_epochs,
             gradient_clip_val=1 if gradient_clipping else 0,
             check_val_every_n_epoch=n_epochs // 1000 if n_epochs > 1000 else 1,
-            callbacks=[callbacks, model_checkpoints, early_stopping],
+            callbacks=callbacks,
         )
         self.learning_rate = learning_rate
         self.weight_decay = weight_decay
