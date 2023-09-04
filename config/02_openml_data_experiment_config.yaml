@@ -1,17 +1,18 @@
 name: "openml"
-num_epochs: 5
+num_epochs: 1000
 learning_rate: 0.001
 weight_decay: 0.0001
 batch_size: 37
-gradient_clipping: False
+gradient_clipping: True
 
-support_size: 5
-query_size: 27
+support_size: 3
+query_size: 29
 
 hidden_representation_size: 32
 n_hidden_layers: 3
 hidden_size: 32
 dropout_rate: 0.1
+is_classifier: False
 
 train_data_path: data/02_openml/train
 val_data_path: data/02_openml/val

@@ -1,6 +1,6 @@
 import pytorch_lightning as pl
 
-from pytorch_lightning.callbacks import Callback, ModelCheckpoint
+from pytorch_lightning.callbacks import Callback, ModelCheckpoint, EarlyStopping
 from pathlib import Path
 from datetime import datetime
 from typing import Union
@@ -39,9 +39,7 @@ class HeterogenousAttributesNetworkTrainer:
         """
         callbacks = LoggerCallback(file_logger=file_logger, tb_logger=tb_logger)
         model_path = Path("results")
-        model_path = (
-            model_path / "models" / datetime.now().strftime("%m-%d-%Y-%H:%M:%S")
-        )
+        model_path = model_path / "models" / datetime.now().strftime("%m-%d-%Y-%H:%M:%S")
         model_checkpoints = ModelCheckpoint(
             dirpath=model_path,
             filename="model-{epoch}-{val_loss:.2f}",
@@ -50,12 +48,13 @@ class HeterogenousAttributesNetworkTrainer:
             every_n_epochs=10,
             save_last=True,
         )
+        early_stopping = EarlyStopping(monitor="val_loss", mode="min", patience=n_epochs // 5)
 
         self.trainer = pl.Trainer(
             max_epochs=n_epochs,
             gradient_clip_val=1 if gradient_clipping else 0,
             check_val_every_n_epoch=n_epochs // 1000 if n_epochs > 1000 else 1,
-            callbacks=[callbacks, model_checkpoints],
+            callbacks=[callbacks, model_checkpoints, early_stopping],
         )
         self.learning_rate = learning_rate
         self.weight_decay = weight_decay

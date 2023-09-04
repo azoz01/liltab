@@ -17,11 +17,12 @@ class TensorBoardLogger(TBLogger):
         self,
         save_dir: _PATH = "results/tensorboard",
         version: str = None,
+        name: str = "",
         use_profiler: bool = False,
         **kwargs: Any
     ):
         if version is None:
-            _version = "experiment " + datetime.now().strftime("%m-%d-%Y-%H:%M:%S")
+            _version = "experiment " + name + " " + datetime.now().strftime("%m-%d-%Y-%H:%M:%S")
         else:
             _version = version
 
@@ -79,12 +80,12 @@ class TensorBoardLogger(TBLogger):
 
 
 class FileLogger:
-    def __init__(self, save_dir: str = "results/flat", version: str = None) -> None:
+    def __init__(self, save_dir: str = "results/flat", name: str = "", version: str = None) -> None:
         super().__init__()
         self.save_dir = save_dir
 
         if version is None:
-            self.version = "experiment " + datetime.now().strftime("%m-%d-%Y-%H:%M:%S")
+            self.version = "experiment " + name + " " + datetime.now().strftime("%m-%d-%Y-%H:%M:%S")
         else:
             self.version = version
 

@@ -12,13 +12,12 @@ from liltab.model.heterogenous_attributes_network import HeterogenousAttributesN
 from liltab.train.trainer import HeterogenousAttributesNetworkTrainer
 from liltab.train.logger import TensorBoardLogger, FileLogger
 from loguru import logger
-from typing_extensions import Annotated
 from pathlib import Path
 
 
 def main(
 ):
-    config_path = Path("config/synthetic_data_experiment_config.yaml")
+    config_path = Path("config/01_synthetic_data_experiment_config.yaml")
     logger_type = "both"
     use_profiler = "no"
 
@@ -63,21 +62,26 @@ def main(
         n_hidden_layers=config["n_hidden_layers"],
         hidden_size=config["hidden_size"],
         dropout_rate=config["dropout_rate"],
+        is_classifier=config["is_classifier"],
     )
 
     if logger_type == "tb":
         tb_logger = TensorBoardLogger(
-            "results/tensorboard", use_profiler=True if use_profiler == "yes" else False
+            "results/tensorboard", 
+            name=config["name"],
+            use_profiler=True if use_profiler == "yes" else False
         )
         file_logger = None
     elif logger_type == "flat":
         tb_logger = None
-        file_logger = FileLogger("results/flat")
+        file_logger = FileLogger("results/flat", name=config["name"])
     elif logger_type == "both":
         tb_logger = TensorBoardLogger(
-            "results/tensorboard", use_profiler=True if use_profiler == "yes" else False
+            "results/tensorboard",
+            name=config["name"],
+            use_profiler=True if use_profiler == "yes" else False
         )
-        file_logger = FileLogger("results/flat")
+        file_logger = FileLogger("results/flat", name=config["name"])
     else:
         raise ValueError("logger_type must from [tb, flat, both]")
 

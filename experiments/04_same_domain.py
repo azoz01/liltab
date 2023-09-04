@@ -1,7 +1,5 @@
-import typer
 import yaml
 import pytorch_lightning as pl
-import warnings
 
 from liltab.data.datasets import PandasDataset, RandomFeaturesPandasDataset
 from liltab.data.dataloaders import (
@@ -14,35 +12,16 @@ from liltab.model.heterogenous_attributes_network import HeterogenousAttributesN
 from liltab.train.trainer import HeterogenousAttributesNetworkTrainer
 from liltab.train.logger import TensorBoardLogger, FileLogger
 from loguru import logger
-from typing_extensions import Annotated
 from pathlib import Path
 
-warnings.filterwarnings("ignore")
-app = typer.Typer()
 
-
-@app.command(help="Trains network on heterogenous attribute spaces.")
 def main(
-    config_path: Annotated[Path, typer.Option(..., help="Path to experiment configuration.")],
-    logger_type: Annotated[
-        str,
-        typer.Option(
-            ...,
-            help="""typer of logger. tb=[tensorboard],
-            flat=[flat file], both=[tensoboard and flat file]""",
-        ),
-    ] = "both",
-    use_profiler: Annotated[
-        str,
-        typer.Option(
-            ...,
-            help="""""use profiler (take long time, 8-10 epoches suggested),
-            yes or no; requires tensorboard (logger-type=[tb|both])""",
-        ),
-    ] = "no",
-    seed: Annotated[int, typer.Option(..., help="Seed")] = 123,
 ):
-    pl.seed_everything(seed)
+    config_path = Path("config/04_same_domain_experiment_config.yaml")
+    logger_type = "both"
+    use_profiler = "no"
+
+    pl.seed_everything(123)
 
     logger.info("Loading config")
     with open(config_path) as f:
@@ -83,25 +62,26 @@ def main(
         n_hidden_layers=config["n_hidden_layers"],
         hidden_size=config["hidden_size"],
         dropout_rate=config["dropout_rate"],
+        is_classifier=config["is_classifier"],
     )
 
     if logger_type == "tb":
         tb_logger = TensorBoardLogger(
-            "results/tensorboard",
+            "results/tensorboard", 
             name=config["name"],
-            use_profiler=True if use_profiler == "yes" else False,
+            use_profiler=True if use_profiler == "yes" else False
         )
         file_logger = None
     elif logger_type == "flat":
         tb_logger = None
-        file_logger = FileLogger("results/flat")
+        file_logger = FileLogger("results/flat", name=config["name"])
     elif logger_type == "both":
         tb_logger = TensorBoardLogger(
             "results/tensorboard",
             name=config["name"],
-            use_profiler=True if use_profiler == "yes" else False,
+            use_profiler=True if use_profiler == "yes" else False
         )
-        file_logger = FileLogger("results/flat")
+        file_logger = FileLogger("results/flat", name=config["name"])
     else:
         raise ValueError("logger_type must from [tb, flat, both]")
 
@@ -124,4 +104,4 @@ def main(
 
 
 if __name__ == "__main__":
-    app()
+    main()

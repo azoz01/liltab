@@ -1,0 +1,19 @@
+name: "new_classes"
+num_epochs: 100
+learning_rate: 0.0001
+weight_decay: 0.0001
+batch_size: 16
+gradient_clipping: True
+
+support_size: 3
+query_size: 29
+
+hidden_representation_size: 16
+n_hidden_layers: 3
+hidden_size: 16
+dropout_rate: 0.1
+is_classifier: True
+
+train_data_path: data/05_new_classes/train
+val_data_path: data/05_new_classes/val
+test_data_path: data/05_new_classes/test
