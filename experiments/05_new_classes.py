@@ -13,6 +13,7 @@ from liltab.train.trainer import HeterogenousAttributesNetworkTrainer
 from liltab.train.logger import TensorBoardLogger, FileLogger
 from loguru import logger
 from pathlib import Path
+from torch import nn
 
 
 def main(
@@ -91,6 +92,7 @@ def main(
         learning_rate=config["learning_rate"],
         weight_decay=config["weight_decay"],
         early_stopping=config["early_stopping"],
+        loss=nn.CrossEntropyLoss(),
         file_logger=file_logger,
         tb_logger=tb_logger,
     )

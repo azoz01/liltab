@@ -57,12 +57,14 @@ def main(
     )
 
     logger.info("Creating model")
+    from torch import nn
     model = HeterogenousAttributesNetwork(
         hidden_representation_size=config["hidden_representation_size"],
         n_hidden_layers=config["n_hidden_layers"],
         hidden_size=config["hidden_size"],
         dropout_rate=config["dropout_rate"],
         is_classifier=config["is_classifier"],
+        inner_activation_function=nn.ELU()
     )
 
     if logger_type == "tb":

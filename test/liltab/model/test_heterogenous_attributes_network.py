@@ -127,9 +127,7 @@ def test_all_network_params_are_trained(utils):
     assert_vars_change(
         model=inference_adapter,
         loss_fn=F.cross_entropy,
-        optim=optim.Adam(
-            inference_adapter.parameters()
-        ),
+        optim=optim.Adam(inference_adapter.parameters()),
         batch=(X_query, y_query),
         device="cpu:0",
     )

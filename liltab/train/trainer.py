@@ -2,8 +2,9 @@ import pytorch_lightning as pl
 
 from pytorch_lightning.callbacks import Callback, ModelCheckpoint, EarlyStopping
 from pathlib import Path
+from torch import nn
 from datetime import datetime
-from typing import Union
+from typing import Union, Callable
 
 from liltab.model.heterogenous_attributes_network import HeterogenousAttributesNetwork
 from liltab.data.dataloaders import (
@@ -71,6 +72,7 @@ class HeterogenousAttributesNetworkTrainer:
         train_loader: ComposedDataLoader | RepeatableOutputComposedDataLoader,
         val_loader: ComposedDataLoader | RepeatableOutputComposedDataLoader,
         test_loader: ComposedDataLoader | RepeatableOutputComposedDataLoader,
+        loss: Callable = nn.MSELoss(),
     ) -> tuple[LightningWrapper, list[dict[str, float]]]:
         """
         Method used to train and test model.
@@ -83,13 +85,14 @@ class HeterogenousAttributesNetworkTrainer:
                 loader with validation data
             test_loader (ComposedDataLoader | RepeatableOutputComposedDataLoader):
                 loader with test data
+            loss (Callable): Loss used during training. Defaults to MSELoss().
 
         Returns:
             tuple[HeterogenousAttributesNetwork, list[dict[str, float]]]:
                 trained network with metrics on test set.
         """
         model_wrapper = LightningWrapper(
-            model, learning_rate=self.learning_rate, weight_decay=self.weight_decay
+            model, learning_rate=self.learning_rate, weight_decay=self.weight_decay, loss=loss
         )
         self.trainer.fit(model_wrapper, train_loader, val_loader)
         test_results = self.trainer.test(model_wrapper, test_loader)
