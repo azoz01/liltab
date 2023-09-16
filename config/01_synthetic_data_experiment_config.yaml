@@ -1,17 +1,19 @@
 name: "synthetic"
-num_epochs: 10
+num_epochs: 100000
 learning_rate: 0.001
 weight_decay: 0.0001
 batch_size: 256
-gradient_clipping: True
+gradient_clipping: False
+early_stopping: True
 
 support_size: 5
 query_size: 27
 
 hidden_representation_size: 32
-n_hidden_layers: 3
+n_hidden_layers: 3 # ?
 hidden_size: 32
 dropout_rate: 0.1
+is_classifier: False
 
 train_data_path: data/01_synthetic/train
 val_data_path: data/01_synthetic/val

@@ -85,6 +85,28 @@ def test_forward_returns_proper_shape(utils):
     assert prediction.shape == (27, 3)
 
 
+def test_forward_returns_probabilities_when_classifier():
+    X_support = Tensor(np.random.uniform(size=(5, 10)))
+    y_support = Tensor([[1, 0, 0], [1, 0, 0], [0, 0, 1], [0, 1, 0], [0, 1, 0]])
+    X_query = Tensor(np.random.uniform(size=(27, 10)))
+
+    network = HeterogenousAttributesNetwork(
+        hidden_representation_size=32,
+        n_hidden_layers=3,
+        hidden_size=32,
+        dropout_rate=0.1,
+        inner_activation_function=nn.ReLU(),
+        output_activation_function=nn.Identity(),
+        is_classifier=True,
+    )
+
+    prediction = network(X_support, y_support, X_query)
+
+    assert prediction.shape == (X_query.shape[0], y_support.shape[1])
+    assert (prediction >= 0).all()
+    testing.assert_close(prediction.sum(axis=1), torch.ones(27))
+
+
 def test_all_network_params_are_trained(utils):
     X_support = Tensor(np.random.uniform(size=(5, 10)))
     y_support = Tensor(np.random.uniform(size=(5, 3)))
@@ -96,7 +118,7 @@ def test_all_network_params_are_trained(utils):
         n_hidden_layers=3,
         hidden_size=32,
         dropout_rate=0.1,
-        inner_activation_function=nn.ReLU(),
+        inner_activation_function=nn.ELU(),
         output_activation_function=nn.Identity(),
     )
 
@@ -105,9 +127,7 @@ def test_all_network_params_are_trained(utils):
     assert_vars_change(
         model=inference_adapter,
         loss_fn=F.cross_entropy,
-        optim=optim.Adam(
-            inference_adapter.parameters(), weight_decay=10
-        ),  # Fixes vanishing gradients, only test purposes
+        optim=optim.Adam(inference_adapter.parameters()),
         batch=(X_query, y_query),
         device="cpu:0",
     )
@@ -246,7 +266,7 @@ def test_enrich_representation_with_set_features():
     testing.assert_close(actual, expected)
 
 
-def test_make_prediction():
+def test_make_prediction_reg():
     attributes_representation = Tensor(np.random.uniform(size=(10, 32)))
     responses_representation = Tensor(np.random.uniform(size=(3, 32)))
     X_query = Tensor(np.random.uniform(size=(5, 10)))
@@ -260,7 +280,7 @@ def test_make_prediction():
         output_activation_function=nn.Identity(),
     )
 
-    actual_prediction = network._make_prediction(
+    actual_prediction = network._make_prediction_reg(
         network.inference_encoding_network,
         network.inference_embedding_network,
         network.inference_network,
@@ -289,6 +309,60 @@ def test_make_prediction():
 
     assert actual_prediction.shape == (5, 3)
     testing.assert_close(actual_prediction[1], expected_example_response)
+
+
+def test_get_inference_embedding_of_set():
+    attributes_representation = Tensor(np.random.uniform(size=(10, 32)))
+    X_query = Tensor(np.random.uniform(size=(5, 10)))
+
+    network = HeterogenousAttributesNetwork(
+        hidden_representation_size=32,
+        n_hidden_layers=3,
+        hidden_size=32,
+        dropout_rate=0,
+        inner_activation_function=nn.ReLU(),
+        output_activation_function=nn.Identity(),
+    )
+
+    expected_query_example_embedding = X_query[1].unsqueeze(0)
+    expected_query_example_embedding = network._enrich_representation_with_set_rows(
+        attributes_representation, expected_query_example_embedding
+    )
+    expected_query_example_embedding = expected_query_example_embedding.reshape(-1, 33)
+    expected_query_example_embedding = network.inference_encoding_network(
+        expected_query_example_embedding
+    ).mean(axis=0)
+    expected_query_example_embedding = network.inference_embedding_network(
+        expected_query_example_embedding
+    )
+
+    actual_query_example_embedding = network._get_inference_embedding_of_set(
+        network.inference_encoding_network,
+        network.inference_embedding_network,
+        X_query,
+        attributes_representation,
+    )
+
+    testing.assert_close(actual_query_example_embedding[1], expected_query_example_embedding)
+
+
+def test_calculate_classes_representations():
+    X = torch.Tensor([[1, 2, 3], [4, 5, 6], [6, 5, 4], [3, 2, 1]])
+    y = torch.Tensor([[0, 1], [1, 0], [1, 0], [0, 1]])
+    expected_representations = Tensor([[5.0, 5.0, 5.0], [2.0, 2.0, 2.0]])
+
+    network = HeterogenousAttributesNetwork(
+        hidden_representation_size=32,
+        n_hidden_layers=3,
+        hidden_size=32,
+        dropout_rate=0,
+        inner_activation_function=nn.ReLU(),
+        output_activation_function=nn.Identity(),
+    )
+
+    actual_representations = network._calculate_classes_representations(X, y)
+
+    testing.assert_close(expected_representations, actual_representations)
 
 
 def test_enrich_representation_with_set_rows():

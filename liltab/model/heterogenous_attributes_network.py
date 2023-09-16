@@ -1,4 +1,5 @@
 import torch
+import torch.nn.functional as F
 
 from torch import nn, Tensor
 from typing import Callable
@@ -24,6 +25,7 @@ class HeterogenousAttributesNetwork(nn.Module):
         dropout_rate: int = 0.1,
         inner_activation_function: Callable = nn.ReLU(),
         output_activation_function: Callable = nn.Identity(),
+        is_classifier: bool = False,
     ):
         """
         Args:
@@ -42,6 +44,8 @@ class HeterogenousAttributesNetwork(nn.Module):
             output_activation_function (Callable, optional): Output activation function
                 of networks used during inference. Should be function from torch.nn.
                 Defaults to nn.Identity().
+            is_classifier (bool, optional): If true then output of the network will be
+                passed through softmax function. Defaults to False.
         """
         super().__init__()
         self.initial_features_encoding_network = FeedForwardNetwork(
@@ -62,7 +66,6 @@ class HeterogenousAttributesNetwork(nn.Module):
             inner_activation_function,
             output_activation_function,
         )
-
         self.interaction_encoding_network = FeedForwardNetwork(
             hidden_representation_size + 1,
             hidden_representation_size,
@@ -128,6 +131,7 @@ class HeterogenousAttributesNetwork(nn.Module):
             inner_activation_function,
             output_activation_function,
         )
+        self.is_classifier = is_classifier
 
     def forward(self, X_support: Tensor, y_support: Tensor, X_query: Tensor) -> Tensor:
         """
@@ -182,14 +186,25 @@ class HeterogenousAttributesNetwork(nn.Module):
             support_set_representation,
             y_support,
         )
-        prediction = self._make_prediction(
-            self.inference_encoding_network,
-            self.inference_embedding_network,
-            self.inference_network,
-            attributes_representation,
-            responses_representation,
-            X_query,
-        )
+
+        if self.is_classifier:
+            prediction = self._make_prediction_clf(
+                self.inference_encoding_network,
+                self.inference_embedding_network,
+                attributes_representation,
+                X_support,
+                X_query,
+                y_support,
+            )
+        else:
+            prediction = self._make_prediction_reg(
+                self.inference_encoding_network,
+                self.inference_embedding_network,
+                self.inference_network,
+                attributes_representation,
+                responses_representation,
+                X_query,
+            )
 
         return prediction
 
@@ -394,7 +409,7 @@ class HeterogenousAttributesNetwork(nn.Module):
         )
         return representation_with_set
 
-    def _make_prediction(
+    def _make_prediction_reg(
         self,
         inference_encoding_network: FeedForwardNetwork,
         inference_embedding_network: FeedForwardNetwork,
@@ -405,7 +420,7 @@ class HeterogenousAttributesNetwork(nn.Module):
     ) -> Tensor:
         """
         Method responsible for calculation of final prediction based on support
-        set representation and query set.
+        set representation and query set in regression problem.
         Args:
             inference_encoding_network (FeedForwardNetwork): Network responsible
                 for encoding concatenation of support set attributes
@@ -432,19 +447,12 @@ class HeterogenousAttributesNetwork(nn.Module):
             Tensor: responses corresponding to X_query
                 with shape (n_query_observations, n_responses)
         """
-        X_query_encoding_input = self._enrich_representation_with_set_rows(
-            attributes_representation, X_query
+        X_query_inference_embedding = self._get_inference_embedding_of_set(
+            inference_encoding_network,
+            inference_embedding_network,
+            X_query,
+            attributes_representation,
         )
-        X_query_encoding_input = X_query_encoding_input.reshape(
-            -1, attributes_representation.shape[1] + 1
-        )
-
-        X_query_inference_embedding = inference_encoding_network(X_query_encoding_input)
-        X_query_inference_embedding = X_query_inference_embedding.reshape(*X_query.shape, -1).mean(
-            axis=1
-        )
-        X_query_inference_embedding = inference_embedding_network(X_query_inference_embedding)
-
         response_dim = responses_representation.shape[0]
         n_query_observations = X_query.shape[0]
         query_embedding_dim = X_query_inference_embedding.shape[1]
@@ -474,6 +482,129 @@ class HeterogenousAttributesNetwork(nn.Module):
         response = inference_network(inference_network_input)
         response = response.reshape(n_query_observations, -1)
         return response
+
+    def _make_prediction_clf(
+        self,
+        inference_encoding_network: FeedForwardNetwork,
+        inference_embedding_network: FeedForwardNetwork,
+        attributes_representation: Tensor,
+        X_support: Tensor,
+        X_query: Tensor,
+        y_support: Tensor,
+    ) -> Tensor:
+        """
+        Method responsible for calculation of final prediction based on support
+        set representation and query set in classification problem.
+        Args:
+            inference_encoding_network (FeedForwardNetwork): Network responsible
+                for encoding concatenation of support set attributes
+                representation with query set attributes.
+                Takes as an input vector with length hidden_representation_size + 1
+                and returns vector with length hidden_representation_size.
+            inference_embedding_network (FeedForwardNetwork): Network responsible
+                for calculating representation of encoding created by
+                inference_encoding_network.
+                Takes as an input vector with length hidden_representation_size
+                and returns vector with length hidden_representation_size.
+            inference_network (FeedForwardNetwork): Network responsible
+                for calculation of responses corresponding to query set based
+                on representation of attributes and responses from query set
+                and representation of query set observations.
+                Takes as an input vector with length 2*hidden_representation_size
+                and returns vector with length n_responses.
+            attributes_representation (Tensor): representation of attributes of support set
+                with shape (n_attributes, hidden_representation_size)
+            responses_representation (Tensor): representation of responses of support set
+                with shape (n_responses, hidden_representation_size)
+            X_query (Tensor): query set with shape (n_query_observations, n_attributes)
+            X_support (Tensor): support set with shape (n_support_observations, n_attributes)
+        Returns:
+            Tensor: responses corresponding to X_query
+                with shape (n_query_observations, n_responses)
+        """
+        X_support_inference_embedding = self._get_inference_embedding_of_set(
+            inference_encoding_network,
+            inference_embedding_network,
+            X_support,
+            attributes_representation,
+        )
+        X_query_inference_embedding = self._get_inference_embedding_of_set(
+            inference_encoding_network,
+            inference_embedding_network,
+            X_query,
+            attributes_representation,
+        )
+
+        classes_representations = self._calculate_classes_representations(
+            X_support_inference_embedding, y_support
+        )
+        response = F.softmax(
+            torch.cdist(X_query_inference_embedding, classes_representations) ** 2, dim=1
+        )
+
+        return response
+
+    def _calculate_classes_representations(self, X: Tensor, y: Tensor) -> Tensor:
+        """
+        Calculates classes representations by averaging their observations.
+
+        Args:
+            X (Tensor): Observations.
+            y (Tensor): Categorical responses, one-hot encoded.
+
+        Returns:
+            Tensor: Calculated representations ordered by corresponding response value.
+        """
+        y = y.argmax(axis=1)
+        response_values = y.sort().values.unique()
+        classes_representations = torch.zeros((response_values.shape[0], X.shape[1]))
+        for val in response_values:
+            classes_representations[val] = X[y == val].mean(axis=0)
+        return classes_representations
+
+    def _get_inference_embedding_of_set(
+        self,
+        inference_encoding_network: FeedForwardNetwork,
+        inference_embedding_network: FeedForwardNetwork,
+        set_: Tensor,
+        attributes_representation: Tensor,
+    ) -> Tensor:
+        """
+        Calculates embedding of set used during prediction generation
+        based on attributes representation.
+
+        Args:
+            inference_encoding_network (FeedForwardNetwork): Network responsible
+                for encoding concatenation of support set attributes
+                representation with query set attributes.
+                Takes as an input vector with length hidden_representation_size + 1
+                and returns vector with length hidden_representation_size.
+            inference_embedding_network (FeedForwardNetwork): Network responsible
+                for calculating representation of encoding created by
+                inference_encoding_network.
+                Takes as an input vector with length hidden_representation_size
+                and returns vector with length hidden_representation_size.
+            set_ (Tensor): Set to generate embedding with shape
+                (n_observations, n_attributes)
+            attributes_representation (Tensor): representation of attributes of support set
+                with shape (n_attributes, hidden_representation_size)
+
+        Returns:
+            Tensor: calculated embedding with shape (n_observations, hidden_representation_size)
+        """
+        X_query_encoding_input = self._enrich_representation_with_set_rows(
+            attributes_representation, set_
+        )
+        X_query_encoding_input = X_query_encoding_input.reshape(
+            -1, attributes_representation.shape[1] + 1
+        )
+
+        X_query_inference_embedding = inference_encoding_network(X_query_encoding_input)
+        X_query_inference_embedding = X_query_inference_embedding.reshape(*set_.shape, -1).mean(
+            axis=1
+        )
+        X_query_inference_embedding = inference_embedding_network(X_query_inference_embedding)
+        return X_query_inference_embedding
 
     def _enrich_representation_with_set_rows(self, representation: Tensor, set_: Tensor) -> Tensor:
         """

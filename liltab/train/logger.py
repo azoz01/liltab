@@ -17,11 +17,12 @@ class TensorBoardLogger(TBLogger):
         self,
         save_dir: _PATH = "results/tensorboard",
         version: str = None,
+        name: str = "",
         use_profiler: bool = False,
         **kwargs: Any
     ):
         if version is None:
-            _version = "experiment " + datetime.now().strftime("%m-%d-%Y-%H:%M:%S")
+            _version = "experiment " + name + " " + datetime.now().strftime("%m-%d-%Y-%H:%M:%S")
         else:
             _version = version
 
@@ -37,6 +38,8 @@ class TensorBoardLogger(TBLogger):
                 with_stack=True,
             )
 
+        self.iter = 0
+
         super().__init__(
             save_dir,
             name=None,
@@ -49,13 +52,14 @@ class TensorBoardLogger(TBLogger):
         )
 
     def log_train_value(self, value: float) -> None:
-        self.experiment.add_scalar("train loss", value)
+        self.iter += 1
+        self.experiment.add_scalar("train loss", value, self.iter)
 
     def log_test_value(self, value: float) -> None:
-        self.experiment.add_scalar("test loss", value)
+        self.experiment.add_text("test loss", str(value))
 
     def log_validate_value(self, value: float) -> None:
-        self.experiment.add_text("validate loss", str(value))
+        self.experiment.add_scalar("validate loss", value, self.iter)
 
     def log_model_graph(
         self, model: HeterogenousAttributesNetwork, model_input: List[Tensor]
@@ -79,12 +83,12 @@ class TensorBoardLogger(TBLogger):
 
 
 class FileLogger:
-    def __init__(self, save_dir: str = "results/flat", version: str = None) -> None:
+    def __init__(self, save_dir: str = "results/flat", name: str = "", version: str = None) -> None:
         super().__init__()
         self.save_dir = save_dir
 
         if version is None:
-            self.version = "experiment " + datetime.now().strftime("%m-%d-%Y-%H:%M:%S")
+            self.version = "experiment " + name + " " + datetime.now().strftime("%m-%d-%Y-%H:%M:%S")
         else:
             self.version = version
 
