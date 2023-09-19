@@ -1,4 +1,5 @@
 import pytorch_lightning as pl
+import torch
 import torch.nn.functional as F
 
 from torch import optim, Tensor
@@ -41,33 +42,45 @@ class LightningWrapper(pl.LightningModule):
         if batch_idx == 0:
             self.example_input = batch[0][:3]
 
-        loss_value = 0.0
-        for example in batch:
+        sum_loss_value = 0.0
+        for i, example in enumerate(batch):
             X_support, y_support, X_query, y_query = example
             prediction = self.model(X_support, y_support, X_query)
-            loss_value += self.loss(prediction, y_query)
+            loss = self.loss(prediction, y_query)
+            if torch.isnan(loss):
+                sum_loss_value = sum_loss_value * (i + 1) / i if i > 0 else 0
+            else:
+                sum_loss_value += loss
 
-        return loss_value
+        return sum_loss_value
 
     def validation_step(
         self, batch: list[tuple[Tensor, Tensor, Tensor, Tensor]], batch_idx
     ) -> float:
-        loss_value = 0.0
-        for example in batch:
+        sum_loss_value = 0.0
+        for i, example in enumerate(batch):
             X_support, y_support, X_query, y_query = example
             prediction = self.model(X_support, y_support, X_query)
-            loss_value += self.loss(prediction, y_query)
+            loss = self.loss(prediction, y_query)
+            if torch.isnan(loss):
+                sum_loss_value = sum_loss_value * (i + 1) / i if i > 0 else 0
+            else:
+                sum_loss_value += loss
 
-        return loss_value
+        return sum_loss_value
 
     def test_step(self, batch: list[tuple[Tensor, Tensor, Tensor, Tensor]], batch_idx) -> float:
-        loss_value = 0.0
-        for example in batch:
+        sum_loss_value = 0.0
+        for i, example in enumerate(batch):
             X_support, y_support, X_query, y_query = example
             prediction = self.model(X_support, y_support, X_query)
-            loss_value += self.loss(prediction, y_query)
+            loss = self.loss(prediction, y_query)
+            if torch.isnan(loss):
+                sum_loss_value = sum_loss_value * (i + 1) / i if i > 0 else 0
+            else:
+                sum_loss_value += loss
 
-        return loss_value
+        return sum_loss_value
 
     def configure_optimizers(self) -> Any:
         return optim.Adam(self.parameters(), lr=self.learning_rate, weight_decay=self.weight_decay)

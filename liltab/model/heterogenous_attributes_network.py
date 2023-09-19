@@ -555,8 +555,8 @@ class HeterogenousAttributesNetwork(nn.Module):
         Returns:
             Tensor: Calculated representations ordered by corresponding response value.
         """
+        response_values = torch.arange(y.shape[1])
         y = y.argmax(axis=1)
-        response_values = y.sort().values.unique()
         classes_representations = torch.zeros((response_values.shape[0], X.shape[1]))
         for val in response_values:
             classes_representations[val] = X[y == val].mean(axis=0)

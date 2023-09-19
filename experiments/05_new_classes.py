@@ -92,7 +92,6 @@ def main(
         learning_rate=config["learning_rate"],
         weight_decay=config["weight_decay"],
         early_stopping=config["early_stopping"],
-        loss=nn.CrossEntropyLoss(),
         file_logger=file_logger,
         tb_logger=tb_logger,
     )
@@ -103,6 +102,8 @@ def main(
         train_loader=train_loader,
         val_loader=val_loader,
         test_loader=test_loader,
+        loss=nn.CrossEntropyLoss(),
+
     )
 
 
