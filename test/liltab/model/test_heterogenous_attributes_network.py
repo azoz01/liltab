@@ -118,7 +118,7 @@ def test_all_network_params_are_trained(utils):
         n_hidden_layers=3,
         hidden_size=32,
         dropout_rate=0.1,
-        inner_activation_function=nn.ELU(),
+        inner_activation_function=nn.ReLU(),
         output_activation_function=nn.Identity(),
     )
 

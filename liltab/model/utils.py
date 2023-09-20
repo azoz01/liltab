@@ -29,6 +29,7 @@ class NetworkBlock(nn.Module):
         super().__init__()
 
         self.block = nn.Sequential(
+            nn.BatchNorm1d(input_size),
             nn.Linear(input_size, output_size),
             nn.Dropout(dropput_rate),
             activation_function,
