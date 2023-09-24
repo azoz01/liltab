@@ -37,7 +37,7 @@ class HeterogenousAttributesNetworkTrainer:
             learning_rate (float): learning rate during training.
             weight_decay (float): weight decay during training.
             early_stopping (Optional, bool): if True, then early stopping with
-                patience n_epochs // 5 is applied. Defaults to False.
+                patience n_epochs // 20 is applied. Defaults to False.
             file_logger (FileLogger|None): csv logger
             tb_logger (TensorBoardLogger|None): tensorboard logger
         """
@@ -54,7 +54,7 @@ class HeterogenousAttributesNetworkTrainer:
         )
         callbacks = [callbacks, model_checkpoints]
         if early_stopping:
-            early_stopping = EarlyStopping(monitor="val_loss", mode="min", patience=n_epochs // 5)
+            early_stopping = EarlyStopping(monitor="val_loss", mode="min", patience=n_epochs // 20)
             callbacks.append(early_stopping)
 
         self.trainer = pl.Trainer(

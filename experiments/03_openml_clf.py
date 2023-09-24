@@ -32,7 +32,7 @@ def main(
     train_loader = ComposedDataLoaderFactory.create_composed_dataloader_from_path(
         Path(config["train_data_path"]),
         PandasDataset,
-        {},
+        {"encode_categorical_target": True},
         FewShotDataLoader,
         {"support_size": config["support_size"], "query_size": config["query_size"]},
         ComposedDataLoader,
@@ -41,7 +41,7 @@ def main(
     val_loader = ComposedDataLoaderFactory.create_composed_dataloader_from_path(
         Path(config["val_data_path"]),
         PandasDataset,
-        {},
+        {"encode_categorical_target": True},
         FewShotDataLoader,
         {"support_size": config["support_size"], "query_size": config["query_size"]},
         RepeatableOutputComposedDataLoader,
@@ -50,7 +50,7 @@ def main(
     test_loader = ComposedDataLoaderFactory.create_composed_dataloader_from_path(
         Path(config["test_data_path"]),
         PandasDataset,
-        {},
+        {"encode_categorical_target": True},
         FewShotDataLoader,
         {"support_size": config["support_size"], "query_size": config["query_size"]},
         RepeatableOutputComposedDataLoader,

@@ -11,7 +11,7 @@ def test_network_block_initializes_properly():
         input_size=12, output_size=30, activation_function=nn.ReLU(), dropput_rate=0.45
     )
 
-    assert len(block.block) == 3
+    assert len(block.block) == 4
     assert block.block[1].p == 0.45
 
 
