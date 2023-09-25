@@ -44,8 +44,8 @@ class HeterogenousAttributesNetwork(nn.Module):
             output_activation_function (Callable, optional): Output activation function
                 of networks used during inference. Should be function from torch.nn.
                 Defaults to nn.Identity().
-            is_classifier (bool, optional): If true then output of the network will be
-                passed through softmax function. Defaults to False.
+            is_classifier (bool, optional): If true then output of the network will
+                generate probabilities of classes for query set Defaults to False.
         """
         super().__init__()
         self.initial_features_encoding_network = FeedForwardNetwork(
@@ -55,7 +55,7 @@ class HeterogenousAttributesNetwork(nn.Module):
             hidden_size,
             dropout_rate,
             inner_activation_function,
-            output_activation_function,
+            inner_activation_function,
         )
         self.initial_features_representation_network = FeedForwardNetwork(
             hidden_representation_size,
@@ -64,7 +64,7 @@ class HeterogenousAttributesNetwork(nn.Module):
             hidden_size,
             dropout_rate,
             inner_activation_function,
-            output_activation_function,
+            inner_activation_function,
         )
         self.interaction_encoding_network = FeedForwardNetwork(
             hidden_representation_size + 1,
@@ -73,7 +73,7 @@ class HeterogenousAttributesNetwork(nn.Module):
             hidden_size,
             dropout_rate,
             inner_activation_function,
-            output_activation_function,
+            inner_activation_function,
         )
         self.interaction_representation_network = FeedForwardNetwork(
             hidden_representation_size,
@@ -82,7 +82,7 @@ class HeterogenousAttributesNetwork(nn.Module):
             hidden_size,
             dropout_rate,
             inner_activation_function,
-            output_activation_function,
+            inner_activation_function,
         )
 
         self.features_encoding_network = FeedForwardNetwork(
@@ -92,7 +92,7 @@ class HeterogenousAttributesNetwork(nn.Module):
             hidden_size,
             dropout_rate,
             inner_activation_function,
-            output_activation_function,
+            inner_activation_function,
         )
         self.features_representation_network = FeedForwardNetwork(
             hidden_representation_size,
@@ -101,7 +101,7 @@ class HeterogenousAttributesNetwork(nn.Module):
             hidden_size,
             dropout_rate,
             inner_activation_function,
-            output_activation_function,
+            inner_activation_function,
         )
 
         self.inference_encoding_network = FeedForwardNetwork(
@@ -111,7 +111,7 @@ class HeterogenousAttributesNetwork(nn.Module):
             hidden_size,
             dropout_rate,
             inner_activation_function,
-            output_activation_function,
+            inner_activation_function,
         )
         self.inference_embedding_network = FeedForwardNetwork(
             hidden_representation_size,
@@ -120,7 +120,7 @@ class HeterogenousAttributesNetwork(nn.Module):
             hidden_size,
             dropout_rate,
             inner_activation_function,
-            output_activation_function,
+            inner_activation_function,
         )
         self.inference_network = FeedForwardNetwork(
             2 * hidden_representation_size,
