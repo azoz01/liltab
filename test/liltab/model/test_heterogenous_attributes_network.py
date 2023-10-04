@@ -118,7 +118,7 @@ def test_all_network_params_are_trained(utils):
         n_hidden_layers=3,
         hidden_size=32,
         dropout_rate=0.1,
-        inner_activation_function=nn.ReLU(),
+        inner_activation_function=nn.ELU(),
         output_activation_function=nn.Identity(),
     )
 
@@ -328,7 +328,7 @@ def test_get_inference_embedding_of_set():
     expected_query_example_embedding = network._enrich_representation_with_set_rows(
         attributes_representation, expected_query_example_embedding
     )
-    expected_query_example_embedding = expected_query_example_embedding.reshape(-1, 33)
+    expected_query_example_embedding = expected_query_example_embedding.reshape(10, 33)
     expected_query_example_embedding = network.inference_encoding_network(
         expected_query_example_embedding
     ).mean(axis=0)

@@ -539,7 +539,7 @@ class HeterogenousAttributesNetwork(nn.Module):
             X_support_inference_embedding, y_support
         )
         response = F.softmax(
-            torch.cdist(X_query_inference_embedding, classes_representations) ** 2, dim=1
+            -(torch.cdist(X_query_inference_embedding, classes_representations) ** 2), dim=1
         )
 
         return response
@@ -559,7 +559,8 @@ class HeterogenousAttributesNetwork(nn.Module):
         y = y.argmax(axis=1)
         classes_representations = torch.zeros((response_values.shape[0], X.shape[1]))
         for val in response_values:
-            classes_representations[val] = X[y == val].mean(axis=0)
+            if (y == val).sum() != 0:
+                classes_representations[val] = X[y == val].mean(axis=0)
         return classes_representations
 
     def _get_inference_embedding_of_set(
