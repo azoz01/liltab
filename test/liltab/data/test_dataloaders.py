@@ -1,6 +1,3 @@
-# ComposedDataLoader (dwa loadery)
-# Czy hasnext dziala dobrze
-
 import numpy as np
 
 from liltab.data.datasets import PandasDataset
