@@ -31,6 +31,12 @@ def test_lighting_wrapper(resources_path):
     model = HeterogenousAttributesNetwork()
 
     trainer = HeterogenousAttributesNetworkTrainer(
-        n_epochs=1, gradient_clipping=True, learning_rate=1e-3, weight_decay=0.1
+        n_epochs=1,
+        gradient_clipping=True,
+        learning_rate=1e-3,
+        weight_decay=0.1,
+        file_logger=False,
+        tb_logger=False,
+        model_checkpoints=False,
     )
     trainer.train_and_test(model, dataloader_1, dataloader_2, dataloader_3)

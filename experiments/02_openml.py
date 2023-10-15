@@ -13,10 +13,10 @@ from liltab.train.trainer import HeterogenousAttributesNetworkTrainer
 from liltab.train.logger import TensorBoardLogger, FileLogger
 from loguru import logger
 from pathlib import Path
+from torch import nn
 
 
-def main(
-):
+def main():
     config_path = Path("config/02_openml_data_experiment_config.yaml")
     logger_type = "both"
     use_profiler = "no"
@@ -57,35 +57,17 @@ def main(
     )
 
     logger.info("Creating model")
-    from torch import nn
+
     model = HeterogenousAttributesNetwork(
         hidden_representation_size=config["hidden_representation_size"],
         n_hidden_layers=config["n_hidden_layers"],
         hidden_size=config["hidden_size"],
         dropout_rate=config["dropout_rate"],
         is_classifier=config["is_classifier"],
-        inner_activation_function=nn.ELU()
+        inner_activation_function=nn.ReLU(),
     )
 
-    if logger_type == "tb":
-        tb_logger = TensorBoardLogger(
-            "results/tensorboard", 
-            name=config["name"],
-            use_profiler=True if use_profiler == "yes" else False
-        )
-        file_logger = None
-    elif logger_type == "flat":
-        tb_logger = None
-        file_logger = FileLogger("results/flat", name=config["name"])
-    elif logger_type == "both":
-        tb_logger = TensorBoardLogger(
-            "results/tensorboard",
-            name=config["name"],
-            use_profiler=True if use_profiler == "yes" else False
-        )
-        file_logger = FileLogger("results/flat", name=config["name"])
-    else:
-        raise ValueError("logger_type must from [tb, flat, both]")
+    results_path = Path("results") / config["name"]
 
     trainer = HeterogenousAttributesNetworkTrainer(
         n_epochs=config["num_epochs"],
@@ -93,8 +75,10 @@ def main(
         learning_rate=config["learning_rate"],
         weight_decay=config["weight_decay"],
         early_stopping=config["early_stopping"],
-        file_logger=file_logger,
-        tb_logger=tb_logger,
+        file_logger=True,
+        tb_logger=True,
+        model_checkpoints=True,
+        results_path=results_path,
     )
 
     logger.info("Training model")

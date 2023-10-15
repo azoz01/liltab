@@ -1,6 +1,9 @@
 import yaml
 import pytorch_lightning as pl
 
+from pytorch_lightning.callbacks import ModelCheckpoint
+from datetime import datetime
+
 from liltab.data.datasets import PandasDataset
 from liltab.data.dataloaders import (
     FewShotDataLoader,
@@ -16,8 +19,7 @@ from pathlib import Path
 from torch import nn
 
 
-def main(
-):
+def main():
     config_path = Path("config/03_openml_clf_data_experiment_config.yaml")
     logger_type = "both"
     use_profiler = "no"
@@ -32,7 +34,7 @@ def main(
     train_loader = ComposedDataLoaderFactory.create_composed_dataloader_from_path(
         Path(config["train_data_path"]),
         PandasDataset,
-        {},
+        {"encode_categorical_target": True},
         FewShotDataLoader,
         {"support_size": config["support_size"], "query_size": config["query_size"]},
         ComposedDataLoader,
@@ -41,7 +43,7 @@ def main(
     val_loader = ComposedDataLoaderFactory.create_composed_dataloader_from_path(
         Path(config["val_data_path"]),
         PandasDataset,
-        {},
+        {"encode_categorical_target": True},
         FewShotDataLoader,
         {"support_size": config["support_size"], "query_size": config["query_size"]},
         RepeatableOutputComposedDataLoader,
@@ -50,7 +52,7 @@ def main(
     test_loader = ComposedDataLoaderFactory.create_composed_dataloader_from_path(
         Path(config["test_data_path"]),
         PandasDataset,
-        {},
+        {"encode_categorical_target": True},
         FewShotDataLoader,
         {"support_size": config["support_size"], "query_size": config["query_size"]},
         RepeatableOutputComposedDataLoader,
@@ -66,25 +68,7 @@ def main(
         is_classifier=config["is_classifier"],
     )
 
-    if logger_type == "tb":
-        tb_logger = TensorBoardLogger(
-            "results/tensorboard", 
-            name=config["name"],
-            use_profiler=True if use_profiler == "yes" else False
-        )
-        file_logger = None
-    elif logger_type == "flat":
-        tb_logger = None
-        file_logger = FileLogger("results/flat", name=config["name"])
-    elif logger_type == "both":
-        tb_logger = TensorBoardLogger(
-            "results/tensorboard",
-            name=config["name"],
-            use_profiler=True if use_profiler == "yes" else False
-        )
-        file_logger = FileLogger("results/flat", name=config["name"])
-    else:
-        raise ValueError("logger_type must from [tb, flat, both]")
+    results_path = Path("results") / config["name"]
 
     trainer = HeterogenousAttributesNetworkTrainer(
         n_epochs=config["num_epochs"],
@@ -92,8 +76,11 @@ def main(
         learning_rate=config["learning_rate"],
         weight_decay=config["weight_decay"],
         early_stopping=config["early_stopping"],
-        file_logger=file_logger,
-        tb_logger=tb_logger,
+        loss=nn.CrossEntropyLoss(),
+        file_logger=True,
+        tb_logger=True,
+        model_checkpoints=True,
+        results_path=results_path,
     )
 
     logger.info("Training model")
@@ -102,7 +89,6 @@ def main(
         train_loader=train_loader,
         val_loader=val_loader,
         test_loader=test_loader,
-        loss=nn.CrossEntropyLoss(),
     )
 
 
