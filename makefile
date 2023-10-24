@@ -15,3 +15,7 @@ run_tests:
 get_coverage: |
 	export PYTHONPATH=`pwd` && pytest -vv --cov=liltab --cov-report=term-missing
 	rm .coverage
+
+release: |
+	python -m build
+	twine upload dist/*
