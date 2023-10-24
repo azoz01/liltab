@@ -7,10 +7,9 @@ include = ["liltab"]
 
 [project]
 name = "liltab"
-version = "1.0.2"
+version = "1.0.3"
 authors = [
-  { name="Antoni Zajko", email="antoni.zajko.1@gmail.com" },
-  { name="Dawid Płudowski", email="dawid.pludowski@gmail.com" }
+  { name="Antoni Zajko, Dawid Płudowski", email="antoni.zajko.1@gmail.com" }
 ]
 description = "Package for meta-learning across data with varying attributes spaces."
 readme = "README.md"
