@@ -328,7 +328,7 @@ def test_get_inference_embedding_of_set():
     expected_query_example_embedding = network._enrich_representation_with_set_rows(
         attributes_representation, expected_query_example_embedding
     )
-    expected_query_example_embedding = expected_query_example_embedding.reshape(-1, 33)
+    expected_query_example_embedding = expected_query_example_embedding.reshape(10, 33)
     expected_query_example_embedding = network.inference_encoding_network(
         expected_query_example_embedding
     ).mean(axis=0)

@@ -1,15 +1,9 @@
-import torch
-
-from torch import Tensor
 from pathlib import Path
 from datetime import datetime
-from torch.profiler import profile
 
-from typing import Any, List
+from typing import Any
 from lightning_fabric.utilities.types import _PATH
 from pytorch_lightning.loggers import TensorBoardLogger as TBLogger
-
-from ..model.heterogenous_attributes_network import HeterogenousAttributesNetwork
 
 
 class TensorBoardLogger(TBLogger):
@@ -18,25 +12,12 @@ class TensorBoardLogger(TBLogger):
         save_dir: _PATH = "results/tensorboard",
         version: str = None,
         name: str = "",
-        use_profiler: bool = False,
         **kwargs: Any
     ):
         if version is None:
-            _version = "experiment " + name + " " + datetime.now().strftime("%m-%d-%Y-%H:%M:%S")
+            _version = "experiment_" + name + " " + datetime.now().strftime("%m-%d-%Y-%H:%M:%S")
         else:
             _version = version
-
-        self.use_profiler = use_profiler
-
-        if self.use_profiler:
-            self.profiler = profile(
-                schedule=torch.profiler.schedule(wait=1, warmup=1, active=3, repeat=2),
-                on_trace_ready=torch.profiler.tensorboard_trace_handler(
-                    Path("./results") / "tensorboard" / _version
-                ),
-                record_shapes=True,
-                with_stack=True,
-            )
 
         self.iter = 0
 
@@ -61,25 +42,8 @@ class TensorBoardLogger(TBLogger):
     def log_validate_value(self, value: float) -> None:
         self.experiment.add_scalar("validate loss", value, self.iter)
 
-    def log_model_graph(
-        self, model: HeterogenousAttributesNetwork, model_input: List[Tensor]
-    ) -> None:
-        self.experiment.add_graph(model, model_input)
-
     def log_weights(self, weights) -> None:
         self.experiment.add_histogram("weights and biases", weights)
-
-    def profile_start(self):
-        if self.use_profiler:
-            self.profiler.start()
-
-    def profile_end(self):
-        if self.use_profiler:
-            self.profiler.stop()
-
-    def profile_step(self):
-        if self.use_profiler:
-            self.profiler.step()
 
 
 class FileLogger:

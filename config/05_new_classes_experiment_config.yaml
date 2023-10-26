@@ -1,8 +1,8 @@
 name: "new_classes"
 num_epochs: 100000
 learning_rate: 0.0001
-weight_decay: 0.0001
-batch_size: 8
+weight_decay: 0
+batch_size: 16
 gradient_clipping: False
 early_stopping: True
 
@@ -10,7 +10,7 @@ support_size: 3
 query_size: 29
 
 hidden_representation_size: 16
-n_hidden_layers: 1
+n_hidden_layers: 3
 hidden_size: 16
 dropout_rate: 0.1
 is_classifier: True
