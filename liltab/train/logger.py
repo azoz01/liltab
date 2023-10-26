@@ -12,7 +12,7 @@ class TensorBoardLogger(TBLogger):
         save_dir: _PATH = "results/tensorboard",
         version: str = None,
         name: str = "",
-        **kwargs: Any
+        **kwargs: Any,
     ):
         if version is None:
             _version = "experiment_" + name + " " + datetime.now().strftime("%m-%d-%Y-%H:%M:%S")
@@ -29,7 +29,7 @@ class TensorBoardLogger(TBLogger):
             default_hp_metric=False,
             prefix="",
             sub_dir=None,
-            **kwargs
+            **kwargs,
         )
 
     def log_train_value(self, value: float) -> None:
