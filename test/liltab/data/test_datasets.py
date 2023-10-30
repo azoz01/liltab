@@ -14,7 +14,7 @@ def test_dataset_initializes_default_columns(resources_path):
 
     dataset = PandasDataset(frame_path)
 
-    assert dataset.feature_columns == frame_columns[:-1]
+    assert dataset.attribute_columns == frame_columns[:-1]
     assert dataset.target_columns == [frame_columns[-1]]
 
 
@@ -25,11 +25,11 @@ def test_dataset_assigns_non_default_columns(resources_path):
 
     dataset = PandasDataset(
         frame_path,
-        feature_columns=frame_columns[1:3],
+        attribute_columns=frame_columns[1:3],
         target_columns=frame_columns[4:],
     )
 
-    assert dataset.feature_columns == frame_columns[1:3]
+    assert dataset.attribute_columns == frame_columns[1:3]
     assert dataset.target_columns == frame_columns[4:]
 
 
@@ -43,7 +43,7 @@ def test_indexing_dataset_returns_proper_data(resources_path):
     expected_records = df.loc[index]
     actual_X, actual_y = dataset[index]
 
-    assert_almost_equal(actual_X.numpy(), expected_records[dataset.feature_columns].values)
+    assert_almost_equal(actual_X.numpy(), expected_records[dataset.attribute_columns].values)
     assert_almost_equal(actual_y.numpy(), expected_records[dataset.target_columns].values)
 
 
@@ -59,7 +59,7 @@ def test_indexing_dataset_returns_proper_data_with_preprocessing(resources_path)
     actual_X, actual_y = dataset[index]
 
     assert_almost_equal(
-        actual_X.numpy(), expected_records[dataset.feature_columns].values, decimal=2
+        actual_X.numpy(), expected_records[dataset.attribute_columns].values, decimal=2
     )
     assert_almost_equal(
         actual_y.numpy(), expected_records[dataset.target_columns].values, decimal=2
@@ -129,10 +129,10 @@ def test_random_features_pandas_dataset_change_features(resources_path):
 
     for _ in range(int(1e2)):
         dataset[0]
-        features_change_cnt += int(not np.array_equal(previous_features, dataset.features))
+        features_change_cnt += int(not np.array_equal(previous_features, dataset.attributes))
         target_change_cnt += int(not np.array_equal(previous_target, dataset.target))
 
-        previous_features = dataset.features
+        previous_features = dataset.attributes
         previous_target = dataset.target
 
     assert np.abs(features_change_cnt / int(1e2) - 1 / persist_features_iter) < 2e-1

@@ -22,7 +22,7 @@ def test_few_shot_data_loader_returns_proper_shape_tensors(resources_path):
     frame_path = resources_path / "random_df_1.csv"
     dataset = PandasDataset(frame_path)
     dataloader = FewShotDataLoader(dataset, 4, 6)
-    n_features = len(dataset.feature_columns)
+    n_features = len(dataset.attribute_columns)
 
     X_support, y_support, X_query, y_query = next(dataloader)
 
