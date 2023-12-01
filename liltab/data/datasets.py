@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+from sklearn.preprocessing import OneHotEncoder
 import torch
 
 from pathlib import Path
@@ -66,8 +67,10 @@ class PandasDataset(Dataset):
 
         self.y = self.df[self.target_columns]
         if self.encode_categorical_target:
-            self.y = pd.get_dummies(self.y.astype("category"))
-        self.y = torch.from_numpy(self.y.to_numpy()).type(torch.float32)
+            self.one_hot_encoder = OneHotEncoder(sparse=False).set_output(transform="pandas")
+            self.raw_y = self.y
+            self.y = self.one_hot_encoder.fit_transform((self.y.astype("category")))
+        self.y = torch.from_numpy(self.y.values).type(torch.float32)
 
     def __getitem__(self, idx: list[int]) -> tuple[Tensor, Tensor]:
         X = self.X[idx]

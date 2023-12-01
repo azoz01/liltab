@@ -2,8 +2,9 @@ import numpy as np
 
 from copy import deepcopy
 from torch import Tensor
-from torch.utils.data import Dataset
-from typing import Iterable, OrderedDict
+from typing import Iterable, OrderedDict, Dict
+
+from liltab.data.datasets import PandasDataset
 
 
 class FewShotDataLoader:
@@ -15,27 +16,76 @@ class FewShotDataLoader:
 
     def __init__(
         self,
-        dataset: Dataset,
+        dataset: PandasDataset,
         support_size: int,
         query_size: int,
         n_episodes: int = None,
+        sample_classes_equally: bool = False,
+        sample_classes_stratified: bool = False,
     ):
         """
         Args:
-            dataset (Dataset): dataset to load data from.
+            dataset (PandasDataset): dataset to load data from.
             support_size (int): size of support set in each episode.
             query_size (int): size of query set in each episode.
             n_episodes (int, optional): number of episodes.
                 If none, then iterator is without end. Defaults to None.
+            sample_classes_equally (int, optional): If True, then in each iteration gives
+                in task equal number of observations per class.
+                Only makes sense in classification.
+            sample_classes_equally (int, optional): If True, then in each iteration gives
+                in task stratified number of observations per class.
+                Only makes sense in classification.
         """
         self.dataset = dataset
         self.support_size = support_size
         self.query_size = query_size
         self.n_episodes = n_episodes
+        self.sample_classes_equally = sample_classes_equally
+        self.sample_classes_stratified = sample_classes_stratified
+        if self.sample_classes_equally and self.sample_classes_stratified:
+            raise ValueError("Only one of equal or stratified sampling can be used.")
 
         self.curr_episode = 0
 
         self.n_rows = len(self.dataset)
+
+        if sample_classes_equally:
+            self.y = dataset.raw_y
+            self.class_values = np.unique(self.y)
+            if (
+                len(self.class_values) > self.support_size
+                or len(self.class_values) > self.query_size
+            ):
+                raise ValueError(
+                    "When sampling equally the support size should "
+                    "be higher than number of distinct values"
+                )
+            self.class_values_idx = dict()
+            for val in self.class_values:
+                self.class_values_idx[val] = np.where(self.y == val)[0]
+            self.samples_per_class_support = {
+                class_value: self.support_size // len(self.class_values)
+                for class_value in self.class_values
+            }
+            self.samples_per_class_query = {
+                class_value: self.query_size // len(self.class_values)
+                for class_value in self.class_values
+            }
+        if self.sample_classes_stratified:
+            self.y = dataset.raw_y
+            self.class_values = np.unique(self.y)
+            self.class_values_idx = dict()
+            for val in self.class_values:
+                self.class_values_idx[val] = np.where(self.y == val)[0]
+            self.samples_per_class_support = {
+                class_value: int(self.support_size * (self.y == class_value).sum() / len(self.y))
+                for class_value in self.class_values
+            }
+            self.samples_per_class_query = {
+                class_value: int(self.query_size * (self.y == class_value).sum() / len(self.y))
+                for class_value in self.class_values
+            }
 
     def __iter__(self):
         return deepcopy(self)
@@ -54,6 +104,42 @@ class FewShotDataLoader:
                 raise StopIteration()
             self.curr_episode += 1
 
+        if self.sample_classes_equally:
+            return self._sample_with_stratified_classes()
+        if self.sample_classes_stratified:
+            return self._sample_with_stratified_classes()
+        else:
+            return self._sample_without_stratified_classes()
+
+    def _sample_with_stratified_classes(self):
+        support_indices = self._generate_stratified_sampling_idx(
+            self.samples_per_class_support, self.support_size
+        )
+        query_indices = self._generate_stratified_sampling_idx(
+            self.samples_per_class_query, self.query_size
+        )
+        return *self.dataset[support_indices], *self.dataset[query_indices]
+
+    def _generate_stratified_sampling_idx(
+        self, samples_per_class_dict: Dict[int, np.ndarray], set_size: int
+    ) -> list[int]:
+        sampled_indices = []
+        for val, idx in self.class_values_idx.items():
+            replace = samples_per_class_dict[val] > len(idx)
+            sampled_indices.extend(
+                np.random.choice(idx, samples_per_class_dict[val], replace=replace)
+            )
+        remaining_to_sample = set_size - len(sampled_indices)
+        if remaining_to_sample > 0:
+            availabe_idx_for_sampling = list(set(range(self.n_rows)) - set(sampled_indices))
+            replace = len(availabe_idx_for_sampling) > remaining_to_sample
+            sampled_indices.extend(
+                np.random.choice(availabe_idx_for_sampling, remaining_to_sample, replace=replace)
+            )
+
+        return sampled_indices
+
+    def _sample_without_stratified_classes(self) -> tuple[Tensor, Tensor, Tensor, Tensor]:
         replace = True if self.support_size + self.query_size >= self.n_rows else False
         all_drawn_indices = np.random.choice(
             self.n_rows, self.support_size + self.query_size, replace=replace
