@@ -104,9 +104,7 @@ class FewShotDataLoader:
                 raise StopIteration()
             self.curr_episode += 1
 
-        if self.sample_classes_equally:
-            return self._sample_with_stratified_classes()
-        if self.sample_classes_stratified:
+        if self.sample_classes_equally or self.sample_classes_stratified:
             return self._sample_with_stratified_classes()
         else:
             return self._sample_without_stratified_classes()
@@ -118,6 +116,8 @@ class FewShotDataLoader:
         query_indices = self._generate_stratified_sampling_idx(
             self.samples_per_class_query, self.query_size
         )
+        support_indices = np.random.permutation(support_indices)
+        query_indices = np.random.permutation(query_indices)
         return *self.dataset[support_indices], *self.dataset[query_indices]
 
     def _generate_stratified_sampling_idx(
