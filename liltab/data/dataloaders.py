@@ -68,23 +68,30 @@ class FewShotDataLoader:
                 self.class_values_idx[val] = np.where(self.y == val)[0]
 
         if sample_classes_equally:
-            self.samples_per_class_support = {
-                class_value: self.support_size // len(self.class_values)
-                for class_value in self.class_values
-            }
-            self.samples_per_class_query = {
-                class_value: self.query_size // len(self.class_values)
-                for class_value in self.class_values
-            }
-        if self.sample_classes_stratified:
-            self.samples_per_class_support = {
-                class_value: int(self.support_size * (self.y == class_value).sum() / len(self.y))
-                for class_value in self.class_values
-            }
-            self.samples_per_class_query = {
-                class_value: int(self.query_size * (self.y == class_value).sum() / len(self.y))
-                for class_value in self.class_values
-            }
+            self._init_samples_per_class_equal()
+
+        if sample_classes_stratified:
+            self._init_samples_per_class_stratified()
+
+    def _init_samples_per_class_equal(self):
+        self.samples_per_class_support = {
+            class_value: self.support_size // len(self.class_values)
+            for class_value in self.class_values
+        }
+        self.samples_per_class_query = {
+            class_value: self.query_size // len(self.class_values)
+            for class_value in self.class_values
+        }
+
+    def _init_samples_per_class_stratified(self):
+        self.samples_per_class_support = {
+            class_value: int(self.support_size * (self.y == class_value).sum() / len(self.y))
+            for class_value in self.class_values
+        }
+        self.samples_per_class_query = {
+            class_value: int(self.query_size * (self.y == class_value).sum() / len(self.y))
+            for class_value in self.class_values
+        }
 
     def __iter__(self):
         return deepcopy(self)

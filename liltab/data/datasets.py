@@ -11,6 +11,12 @@ from .preprocessing import get_preprocessing_pipeline
 
 
 class Dataset(ABC):
+    """
+    Abstract class for Datasets. It reads and stores data as Pandas
+    DataFrame. __getitem__ method is to be implemented with custom
+    indexing strategy.
+    """
+
     def __init__(
         self,
         data_path: str,
@@ -45,6 +51,10 @@ class Dataset(ABC):
             self.y = self.df[self.response_columns].values
 
     def _preprocess_data(self):
+        """
+        Standardizes data using z-score method. If encode_categorical_target = True
+        then response variable isn't scaled.
+        """
         self.preprocessing_pipeline = get_preprocessing_pipeline()
         if self.encode_categorical_target:
             self.df.loc[:, self.attribute_columns] = self.preprocessing_pipeline.fit_transform(
@@ -56,6 +66,9 @@ class Dataset(ABC):
             )
 
     def _encode_categorical_target(self):
+        """
+        Encodes categorical response using one-hot encoding.
+        """
         self.one_hot_encoder = OneHotEncoder(sparse=False)
         self.raw_y = self.df[self.response_columns]
         self.y = self.one_hot_encoder.fit_transform((self.df[self.response_columns]))

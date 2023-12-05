@@ -31,7 +31,7 @@ def main():
     train_loader = ComposedDataLoaderFactory.create_composed_dataloader_from_path(
         Path(config["train_data_path"]),
         RandomFeaturesPandasDataset,
-        {},
+        {"total_random_feature_sampling": True},
         FewShotDataLoader,
         {"support_size": config["support_size"], "query_size": config["query_size"]},
         ComposedDataLoader,
