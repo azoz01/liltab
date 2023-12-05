@@ -1,6 +1,6 @@
 import numpy as np
 
-from liltab.data.datasets import PandasDataset
+from liltab.data.datasets import PandasDataset, RandomFeaturesPandasDataset
 from liltab.data.dataloaders import (
     FewShotDataLoader,
     ComposedDataLoader,
@@ -42,6 +42,65 @@ def test_few_shot_data_loader_returns_disjoint_tensors(resources_path, utils):
 
         assert not utils.tensors_have_common_rows(X_support, X_query)
         assert not utils.tensors_have_common_rows(y_support, y_query)
+
+
+def test_few_shot_data_loader_samples_equally_when_set_size_divisible_by_nunique_classes(
+    resources_path,
+):
+    frame_path = resources_path / "random_df_3.csv"
+    dataset = PandasDataset(frame_path, encode_categorical_target=True)
+    dataloader = FewShotDataLoader(dataset, 9, 6, n_episodes=10, sample_classes_equally=True)
+
+    for episode in dataloader:
+        _, y_support, _, y_query = episode
+        for i in range(3):
+            assert (y_support[:, i]).sum() == 3
+            assert (y_query[:, i]).sum() == 2
+
+
+def test_few_shot_data_loader_samples_equally_works_with_random_features(
+    resources_path,
+):
+    frame_path = resources_path / "random_df_3.csv"
+    dataset = RandomFeaturesPandasDataset(frame_path, encode_categorical_target=True)
+    dataloader = FewShotDataLoader(dataset, 9, 6, n_episodes=10, sample_classes_equally=True)
+
+    for episode in dataloader:
+        _, y_support, _, y_query = episode
+        for i in range(3):
+            assert (y_support[:, i]).sum() == 3
+            assert (y_query[:, i]).sum() == 2
+
+
+def test_few_shot_data_loader_samples_equally_when_set_size_non_divisible_by_nunique_classes(
+    resources_path,
+):
+    frame_path = resources_path / "random_df_3.csv"
+    dataset = PandasDataset(frame_path, encode_categorical_target=True)
+    dataloader = FewShotDataLoader(dataset, 11, 7, n_episodes=10, sample_classes_equally=True)
+
+    for episode in dataloader:
+        _, y_support, _, y_query = episode
+        for i in range(3):
+            assert (y_support[:, i]).sum() >= 3
+            assert (y_query[:, i]).sum() >= 2
+
+
+def test_few_shot_data_loader_samples_stratified(
+    resources_path,
+):
+    frame_path = resources_path / "random_df_4.csv"
+    dataset = PandasDataset(frame_path, encode_categorical_target=True)
+    dataloader = FewShotDataLoader(dataset, 6, 12, n_episodes=10, sample_classes_stratified=True)
+
+    for episode in dataloader:
+        _, y_support, _, y_query = episode
+        assert y_support[:, 0].sum() == 1
+        assert y_support[:, 1].sum() == 2
+        assert y_support[:, 2].sum() == 3
+        assert y_query[:, 0].sum() == 2
+        assert y_query[:, 1].sum() == 4
+        assert y_query[:, 2].sum() == 6
 
 
 def test_few_shot_data_loader_has_next(resources_path):
