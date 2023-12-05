@@ -215,7 +215,7 @@ class RandomFeaturesPandasDataset(Dataset):
 
         X = torch.from_numpy(self.df[self.attributes].to_numpy()).type(torch.float32)
         if self.encode_categorical_target:
-            y = self.y
+            y = torch.from_numpy(self.y).type(torch.float32)
         else:
             y = torch.from_numpy(self.df[self.responses].to_numpy()).type(torch.float32)
 
