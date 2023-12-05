@@ -14,8 +14,8 @@ def test_dataset_initializes_default_columns(resources_path):
 
     dataset = PandasDataset(frame_path)
 
-    assert dataset.attribute_columns == frame_columns[:-1]
-    assert dataset.target_columns == [frame_columns[-1]]
+    assert (dataset.attribute_columns == frame_columns[:-1]).all()
+    assert (dataset.response_columns == [frame_columns[-1]]).all()
 
 
 def test_dataset_assigns_non_default_columns(resources_path):
@@ -26,11 +26,11 @@ def test_dataset_assigns_non_default_columns(resources_path):
     dataset = PandasDataset(
         frame_path,
         attribute_columns=frame_columns[1:3],
-        target_columns=frame_columns[4:],
+        response_columns=frame_columns[4:],
     )
 
-    assert dataset.attribute_columns == frame_columns[1:3]
-    assert dataset.target_columns == frame_columns[4:]
+    assert (dataset.attribute_columns == frame_columns[1:3]).all()
+    assert (dataset.response_columns == frame_columns[4:]).all()
 
 
 def test_indexing_dataset_returns_proper_data(resources_path):
@@ -44,7 +44,7 @@ def test_indexing_dataset_returns_proper_data(resources_path):
     actual_X, actual_y = dataset[index]
 
     assert_almost_equal(actual_X.numpy(), expected_records[dataset.attribute_columns].values)
-    assert_almost_equal(actual_y.numpy(), expected_records[dataset.target_columns].values)
+    assert_almost_equal(actual_y.numpy(), expected_records[dataset.response_columns].values)
 
 
 def test_indexing_dataset_returns_proper_data_with_preprocessing(resources_path):
@@ -62,7 +62,7 @@ def test_indexing_dataset_returns_proper_data_with_preprocessing(resources_path)
         actual_X.numpy(), expected_records[dataset.attribute_columns].values, decimal=2
     )
     assert_almost_equal(
-        actual_y.numpy(), expected_records[dataset.target_columns].values, decimal=2
+        actual_y.numpy(), expected_records[dataset.response_columns].values, decimal=2
     )
 
 
@@ -118,7 +118,10 @@ def test_random_features_pandas_dataset_change_features(resources_path):
     frame_path = resources_path / "random_df_1.csv"
     persist_features_iter = 3
     dataset = RandomFeaturesPandasDataset(
-        frame_path, preprocess_data=True, persist_features_iter=persist_features_iter
+        frame_path,
+        preprocess_data=True,
+        persist_features_iter=persist_features_iter,
+        total_random_feature_sampling=True,
     )
 
     previous_features = np.ndarray([])
@@ -130,10 +133,26 @@ def test_random_features_pandas_dataset_change_features(resources_path):
     for _ in range(int(1e2)):
         dataset[0]
         features_change_cnt += int(not np.array_equal(previous_features, dataset.attributes))
-        target_change_cnt += int(not np.array_equal(previous_target, dataset.target))
+        target_change_cnt += int(not np.array_equal(previous_target, dataset.responses))
 
         previous_features = dataset.attributes
-        previous_target = dataset.target
+        previous_target = dataset.responses
 
     assert np.abs(features_change_cnt / int(1e2) - 1 / persist_features_iter) < 2e-1
     assert np.abs(target_change_cnt / int(1e2) - 1 / persist_features_iter) < 2e-1
+
+
+def test_random_features_pandas_dataset_returns_proper_subset(resources_path):
+    frame_path = resources_path / "random_df_1.csv"
+    persist_features_iter = 1
+    dataset = RandomFeaturesPandasDataset(
+        frame_path,
+        preprocess_data=True,
+        persist_features_iter=persist_features_iter,
+        attribute_columns=["col_1", "col_2"],
+        response_columns=["col_3", "col_4", "col_5"],
+    )
+    for _ in range(int(1e2)):
+        X, y = dataset[0:10]
+        assert X.shape[1] <= 2
+        assert y.shape[1] <= 3

@@ -1,6 +1,6 @@
 import numpy as np
 
-from liltab.data.datasets import PandasDataset
+from liltab.data.datasets import PandasDataset, RandomFeaturesPandasDataset
 from liltab.data.dataloaders import (
     FewShotDataLoader,
     ComposedDataLoader,
@@ -49,6 +49,20 @@ def test_few_shot_data_loader_samples_equally_when_set_size_divisible_by_nunique
 ):
     frame_path = resources_path / "random_df_3.csv"
     dataset = PandasDataset(frame_path, encode_categorical_target=True)
+    dataloader = FewShotDataLoader(dataset, 9, 6, n_episodes=10, sample_classes_equally=True)
+
+    for episode in dataloader:
+        _, y_support, _, y_query = episode
+        for i in range(3):
+            assert (y_support[:, i]).sum() == 3
+            assert (y_query[:, i]).sum() == 2
+
+
+def test_few_shot_data_loader_samples_equally_works_with_random_features(
+    resources_path,
+):
+    frame_path = resources_path / "random_df_3.csv"
+    dataset = RandomFeaturesPandasDataset(frame_path, encode_categorical_target=True)
     dataloader = FewShotDataLoader(dataset, 9, 6, n_episodes=10, sample_classes_equally=True)
 
     for episode in dataloader:

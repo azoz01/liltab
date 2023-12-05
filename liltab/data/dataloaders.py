@@ -50,7 +50,7 @@ class FewShotDataLoader:
 
         self.n_rows = len(self.dataset)
 
-        if sample_classes_equally:
+        if self.sample_classes_equally or self.sample_classes_stratified:
             self.y = dataset.raw_y
             self.class_values = np.unique(self.y)
             if len(self.class_values) > self.support_size:
@@ -66,6 +66,8 @@ class FewShotDataLoader:
             self.class_values_idx = dict()
             for val in self.class_values:
                 self.class_values_idx[val] = np.where(self.y == val)[0]
+
+        if sample_classes_equally:
             self.samples_per_class_support = {
                 class_value: self.support_size // len(self.class_values)
                 for class_value in self.class_values
@@ -75,21 +77,12 @@ class FewShotDataLoader:
                 for class_value in self.class_values
             }
         if self.sample_classes_stratified:
-            self.y = dataset.raw_y
-            self.class_values = np.unique(self.y)
-            self.class_values_idx = dict()
-            for val in self.class_values:
-                self.class_values_idx[val] = np.where(self.y == val)[0]
             self.samples_per_class_support = {
-                class_value: int(
-                    self.support_size * (self.y == class_value).sum() / len(self.y)
-                )
+                class_value: int(self.support_size * (self.y == class_value).sum() / len(self.y))
                 for class_value in self.class_values
             }
             self.samples_per_class_query = {
-                class_value: int(
-                    self.query_size * (self.y == class_value).sum() / len(self.y)
-                )
+                class_value: int(self.query_size * (self.y == class_value).sum() / len(self.y))
                 for class_value in self.class_values
             }
 
@@ -111,11 +104,11 @@ class FewShotDataLoader:
             self.curr_episode += 1
 
         if self.sample_classes_equally or self.sample_classes_stratified:
-            return self._sample_with_stratified_classes()
+            return self._sample_with_custom_proportion_classes()
         else:
             return self._sample_without_stratified_classes()
 
-    def _sample_with_stratified_classes(self):
+    def _sample_with_custom_proportion_classes(self):
         support_indices = self._generate_stratified_sampling_idx(
             self.samples_per_class_support, self.support_size
         )
@@ -137,14 +130,10 @@ class FewShotDataLoader:
             )
         remaining_to_sample = set_size - len(sampled_indices)
         if remaining_to_sample > 0:
-            available_idx_for_sampling = list(
-                set(range(self.n_rows)) - set(sampled_indices)
-            )
+            available_idx_for_sampling = list(set(range(self.n_rows)) - set(sampled_indices))
             replace = len(available_idx_for_sampling) > remaining_to_sample
             sampled_indices.extend(
-                np.random.choice(
-                    available_idx_for_sampling, remaining_to_sample, replace=replace
-                )
+                np.random.choice(available_idx_for_sampling, remaining_to_sample, replace=replace)
             )
 
         return sampled_indices
@@ -156,9 +145,7 @@ class FewShotDataLoader:
         all_drawn_indices = np.random.choice(
             self.n_rows, self.support_size + self.query_size, replace=replace
         )
-        support_indices = np.random.choice(
-            all_drawn_indices, self.support_size, replace=False
-        )
+        support_indices = np.random.choice(all_drawn_indices, self.support_size, replace=False)
         query_indices = np.array(list(set(all_drawn_indices) - set(support_indices)))
         return *self.dataset[support_indices], *self.dataset[query_indices]
 
