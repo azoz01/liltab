@@ -7,7 +7,7 @@ include = ["liltab"]
 
 [project]
 name = "liltab"
-version = "1.0.4"
+version = "1.0.5"
 authors = [
   { name="Antoni Zajko, Dawid Płudowski", email="antoni.zajko.1@gmail.com" }
 ]
