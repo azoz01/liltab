@@ -7,6 +7,28 @@ from numpy.testing import assert_almost_equal
 from torch import Tensor, float32
 
 
+def test_dataset_works_when_path_given(resources_path):
+    frame_path = resources_path / "random_df_1.csv"
+
+    dataset = PandasDataset(frame_path)
+
+    assert dataset.df is not None
+
+
+def test_dataset_works_dataframe_given(resources_path):
+    frame_path = resources_path / "random_df_1.csv"
+    df = pd.read_csv(frame_path)
+
+    dataset = PandasDataset(df)
+
+    assert dataset.df is not None
+
+
+def test_dataset_raises_error_with_incorrect_data():
+    with pytest.raises(ValueError):
+        PandasDataset(1)
+
+
 def test_dataset_initializes_default_columns(resources_path):
     frame_path = resources_path / "random_df_1.csv"
     df = pd.read_csv(frame_path)
@@ -14,7 +36,10 @@ def test_dataset_initializes_default_columns(resources_path):
 
     dataset = PandasDataset(frame_path)
 
-    assert (dataset.attribute_columns == frame_columns[:-1]).all()
+    assert (
+        dataset.attribute_columns
+        == ["pipeline-2__col_1", "pipeline-2__col_2", "pipeline-2__col_3", "pipeline-2__col_4"]
+    ).all()
     assert (dataset.response_columns == [frame_columns[-1]]).all()
 
 
@@ -29,7 +54,7 @@ def test_dataset_assigns_non_default_columns(resources_path):
         response_columns=frame_columns[4:],
     )
 
-    assert (dataset.attribute_columns == frame_columns[1:3]).all()
+    assert (dataset.attribute_columns == ["pipeline-2__col_2", "pipeline-2__col_3"]).all()
     assert (dataset.response_columns == frame_columns[4:]).all()
 
 
@@ -58,12 +83,56 @@ def test_indexing_dataset_returns_proper_data_with_preprocessing(resources_path)
     expected_records = df.loc[index]
     actual_X, actual_y = dataset[index]
 
-    assert_almost_equal(
-        actual_X.numpy(), expected_records[dataset.attribute_columns].values, decimal=2
-    )
+    assert_almost_equal(actual_X.numpy(), expected_records.iloc[:, :4].values, decimal=2)
     assert_almost_equal(
         actual_y.numpy(), expected_records[dataset.response_columns].values, decimal=2
     )
+
+
+def test_dataset_encodes_categorical_columns():
+    df = df = pd.DataFrame(
+        data=[
+            [1, "A", "E", 0.1],
+            [3, "B", "E", 0.5],
+            [3, "A", "F", 0.4],
+            [1, "C", "E", 0.3],
+        ],
+        columns=["int1", "cat1", "cat2", "target"],
+    )
+    df["cat2"].astype("category")
+    dataset = PandasDataset(df)
+
+    expected_attribute_columns = np.array(
+        [
+            "pipeline-1__cat1_A",
+            "pipeline-1__cat1_B",
+            "pipeline-1__cat1_C",
+            "pipeline-1__cat2_E",
+            "pipeline-1__cat2_F",
+            "pipeline-2__int1",
+        ]
+    )
+
+    assert (dataset.attribute_columns == expected_attribute_columns).all()
+    assert (
+        dataset.df[
+            [
+                "pipeline-1__cat1_A",
+                "pipeline-1__cat1_B",
+                "pipeline-1__cat1_C",
+                "pipeline-1__cat2_E",
+                "pipeline-1__cat2_F",
+            ]
+        ].values
+        == np.array(
+            [
+                [1, 0, 0, 1, 0],
+                [0, 1, 0, 1, 0],
+                [1, 0, 0, 0, 1],
+                [0, 0, 1, 1, 0],
+            ]
+        )
+    ).all()
 
 
 def test_class_forbids_one_hot_with_multiple_targets(resources_path):
@@ -72,7 +141,7 @@ def test_class_forbids_one_hot_with_multiple_targets(resources_path):
     feture_columns = df.columns[:-2]
     target_columns = df.columns[-2:]
     with pytest.raises(ValueError):
-        PandasDataset(frame_path, feture_columns, target_columns, encode_categorical_target=True)
+        PandasDataset(frame_path, feture_columns, target_columns, encode_categorical_response=True)
 
 
 def test_preprocessing_when_target_categorical(resources_path):
@@ -81,7 +150,7 @@ def test_preprocessing_when_target_categorical(resources_path):
     expected_X = df.drop(columns=["class"])
     expected_X = (expected_X - expected_X.mean(axis=0)) / expected_X.std(axis=0)
 
-    dataset = PandasDataset(frame_path, encode_categorical_target=True)
+    dataset = PandasDataset(frame_path, encode_categorical_response=True)
 
     assert dataset.y.shape == (df.shape[0], df["class"].max())
     assert_almost_equal(dataset.y.sum(axis=1).numpy(), np.ones(df.shape[0]))

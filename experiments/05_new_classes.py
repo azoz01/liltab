@@ -31,7 +31,7 @@ def main():
     train_loader = ComposedDataLoaderFactory.create_composed_dataloader_from_path(
         Path(config["train_data_path"]),
         PandasDataset,
-        {"encode_categorical_target": True},
+        {"encode_categorical_response": True},
         FewShotDataLoader,
         {"support_size": config["support_size"], "query_size": config["query_size"]},
         ComposedDataLoader,
@@ -40,7 +40,7 @@ def main():
     val_loader = ComposedDataLoaderFactory.create_composed_dataloader_from_path(
         Path(config["val_data_path"]),
         PandasDataset,
-        {"encode_categorical_target": True},
+        {"encode_categorical_response": True},
         FewShotDataLoader,
         {"support_size": config["support_size"], "query_size": config["query_size"]},
         RepeatableOutputComposedDataLoader,
@@ -49,7 +49,7 @@ def main():
     test_loader = ComposedDataLoaderFactory.create_composed_dataloader_from_path(
         Path(config["test_data_path"]),
         PandasDataset,
-        {"encode_categorical_target": True},
+        {"encode_categorical_response": True},
         FewShotDataLoader,
         {"support_size": config["support_size"], "query_size": config["query_size"]},
         RepeatableOutputComposedDataLoader,
@@ -72,7 +72,7 @@ def main():
         gradient_clipping=config["gradient_clipping"],
         learning_rate=config["learning_rate"],
         weight_decay=config["weight_decay"],
-        early_stopping=config["early_stopping"],
+        early_stopping_intervals=config["early_stopping_intervals"],
         loss=nn.CrossEntropyLoss(),
         file_logger=True,
         tb_logger=True,

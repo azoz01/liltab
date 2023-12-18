@@ -79,7 +79,7 @@ HeterogenousAttributesNetworkTrainer(
     gradient_clipping=False,
     learning_rate=1e-3,
     weight_decay=1e-4,
-    early_stopping=True,
+    early_stopping_intervals=100,
     file_logger=True,
     tb_logger=True,
     model_checkpoints=True,
