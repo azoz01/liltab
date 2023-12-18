@@ -75,7 +75,7 @@ def main():
         gradient_clipping=config["gradient_clipping"],
         learning_rate=config["learning_rate"],
         weight_decay=config["weight_decay"],
-        early_stopping=config["early_stopping"],
+        early_stopping_intervals=config["early_stopping_intervals"],
         loss=nn.CrossEntropyLoss(),
         file_logger=True,
         tb_logger=True,

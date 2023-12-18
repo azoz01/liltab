@@ -26,7 +26,8 @@ class HeterogenousAttributesNetworkTrainer:
         gradient_clipping: bool,
         learning_rate: float,
         weight_decay: float,
-        early_stopping: bool = False,
+        early_stopping_intervals: bool = 100,
+        check_val_every_n_epoch: int = 100,
         loss: Callable = nn.MSELoss(),
         file_logger: bool = True,
         tb_logger: bool = True,
@@ -39,8 +40,10 @@ class HeterogenousAttributesNetworkTrainer:
             gradient_clipping (bool): If true, then gradient clipping is applied
             learning_rate (float): learning rate during training.
             weight_decay (float): weight decay during training.
-            early_stopping (Optional, bool): if True, then early stopping with
-                patience n_epochs // 10 is applied. Defaults to False.
+            early_stopping_intervals (Optional, bool): if >0, then early stopping with
+                patience early_stopping_intervals*check_val_every_n_epoch epochs is applied.
+            check_val_every_n_epoch (Optional, bool): Specifies how often validation loss
+                is checked. Defaults to 100,
             loss (Callable): Loss used during training. Defaults to MSELoss().
             file_logger (bool): if True, then file logger will write to
                 {results_path} directory
@@ -83,11 +86,11 @@ class HeterogenousAttributesNetworkTrainer:
             )
             callbacks.append(loggers_callback)
 
-        if early_stopping:
+        if early_stopping_intervals > 0:
             early_stopping = EarlyStopping(
                 monitor="val_loss",
                 mode="min",
-                patience=100,
+                patience=early_stopping_intervals,
                 min_delta=1e-3,
             )
             callbacks.append(early_stopping)
@@ -102,8 +105,6 @@ class HeterogenousAttributesNetworkTrainer:
                 save_last=True,
             )
             callbacks.append(model_checkpoints_callback)
-
-        check_val_every_n_epoch = n_epochs // 1000 if n_epochs > 1000 else 1
 
         self.trainer = pl.Trainer(
             max_epochs=n_epochs,

@@ -1,11 +1,14 @@
 import numpy as np
 import pandas as pd
+from sklearn.discriminant_analysis import StandardScaler
 import torch
 
 from abc import ABC, abstractmethod
-from pathlib import Path
+from itertools import product
+from pathlib import PosixPath
 from sklearn.preprocessing import OneHotEncoder
 from torch import Tensor
+from typing import Union
 
 from .preprocessing import get_preprocessing_pipeline
 
@@ -19,7 +22,7 @@ class Dataset(ABC):
 
     def __init__(
         self,
-        data_path: str,
+        data: Union[PosixPath, str, pd.DataFrame],
         attribute_columns: list[str],
         response_columns: list[str],
         preprocess_data: bool,
@@ -32,8 +35,16 @@ class Dataset(ABC):
         ):
             raise ValueError("One-hot encoding is supported only for single target")
 
-        self.data_path = data_path
-        self.df = pd.read_csv(data_path)
+        self.data = data
+        if type(data) in [str, PosixPath]:
+            self.df = pd.read_csv(data)
+        elif type(data) == pd.DataFrame:
+            self.df = data
+        else:
+            raise ValueError(
+                f"Data should be PosixPath, "
+                f"str or pandas.DataFrame but is {type(data)}"
+            )
 
         self.attribute_columns = np.array(
             attribute_columns
@@ -64,23 +75,24 @@ class Dataset(ABC):
         then response variable isn't scaled.
         """
         self.preprocessing_pipeline = get_preprocessing_pipeline()
-        if self.encode_categorical_target:
-            self.df.loc[
-                :, self.attribute_columns
-            ] = self.preprocessing_pipeline.fit_transform(
-                self.df[self.attribute_columns]
-            )
-        else:
-            self.df = pd.DataFrame(
-                self.preprocessing_pipeline.fit_transform(self.df),
-                columns=self.df.columns,
-            )
+        df_preproc = self.preprocessing_pipeline.fit_transform(self.df[self.attribute_columns])
+        self.df = self.df.drop(columns=self.attribute_columns)
+        self.df = pd.concat([df_preproc, self.df], axis=1)
+
+        attribute_columns_new = []
+        for attr_col, frame_col in product(self.attribute_columns, self.df.columns):
+            if attr_col in frame_col:
+                attribute_columns_new.append(frame_col)
+        self.attribute_columns = np.array(attribute_columns_new)
+
+        if not self.encode_categorical_target:
+            self.df[self.response_columns] = StandardScaler().fit_transform(self.df[self.response_columns])        
 
     def _encode_categorical_target(self):
         """
         Encodes categorical response using one-hot encoding.
         """
-        self.one_hot_encoder = OneHotEncoder(sparse=False)
+        self.one_hot_encoder = OneHotEncoder(sparse_output=False)
         self.raw_y = self.df[self.response_columns]
         self.y = self.one_hot_encoder.fit_transform((self.df[self.response_columns]))
 
@@ -101,7 +113,7 @@ class PandasDataset(Dataset):
 
     def __init__(
         self,
-        data_path: Path,
+        data: Union[PosixPath, str, pd.DataFrame],
         attribute_columns: list[str] = None,
         response_columns: list[str] = None,
         preprocess_data: bool = True,
@@ -109,7 +121,7 @@ class PandasDataset(Dataset):
     ):
         """
         Args:
-            data_path (Path): Path to data to be loaded
+            data (Union[PosixPath, str, pd.DataFrame]): Frame with data or path to .csv file.
             attribute_columns (list[str], optional): Columns from frame
                 which will be used as attributes.
                 Defaults to all columns without last.
@@ -123,7 +135,7 @@ class PandasDataset(Dataset):
                 Default to False.
         """
         super().__init__(
-            data_path=data_path,
+            data=data,
             attribute_columns=attribute_columns,
             response_columns=response_columns,
             encode_categorical_target=encode_categorical_target,
@@ -152,7 +164,7 @@ class RandomFeaturesPandasDataset(Dataset):
 
     def __init__(
         self,
-        data_path: Path,
+        data: Union[PosixPath, str, pd.DataFrame],
         attribute_columns: list[str] = None,
         response_columns: list[str] = None,
         total_random_feature_sampling: bool = False,
@@ -162,7 +174,7 @@ class RandomFeaturesPandasDataset(Dataset):
     ):
         """
         Args:
-            data_path (Path): Path to data to be loaded
+            data (Union[PosixPath, str, pd.DataFrame]): Frame with data or path to .csv file.
             attribute_columns (list[str], optional): Columns from frame
                 which will be attributes sampled from.
                 Ignored when total_random_feature_sampling = True.
@@ -187,7 +199,7 @@ class RandomFeaturesPandasDataset(Dataset):
                 Defaults to 2.
         """
         super().__init__(
-            data_path=data_path,
+            data=data,
             attribute_columns=attribute_columns,
             response_columns=response_columns,
             encode_categorical_target=encode_categorical_target,

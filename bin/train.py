@@ -110,7 +110,7 @@ def main(
         gradient_clipping=config["gradient_clipping"],
         learning_rate=config["learning_rate"],
         weight_decay=config["weight_decay"],
-        early_stopping=config["early_stopping"],
+        early_stopping_intervals=config["early_stopping_intervals"],
         file_logger=file_logger,
         tb_logger=tb_logger,
     )

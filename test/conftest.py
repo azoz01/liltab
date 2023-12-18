@@ -51,7 +51,7 @@ class InferenceAdapter(nn.Module):
 
 
 def pytest_sessionfinish(session, exitstatus):
-    rmtree(Path("test") / "results")
+    rmtree(Path("test") / "results", ignore_errors=True)
 
 
 def pytest_sessionstart(session):
