@@ -102,14 +102,16 @@ def test_dataset_encodes_categorical_columns():
     df["cat2"].astype("category")
     dataset = PandasDataset(df)
 
-    expected_attribute_columns = [
-        "pipeline-2__int1",
-        "pipeline-1__cat1_A",
-        "pipeline-1__cat1_B",
-        "pipeline-1__cat1_C",
-        "pipeline-1__cat2_E",
-        "pipeline-1__cat2_F",
-    ]
+    expected_attribute_columns = np.array(
+        [
+            "pipeline-1__cat1_A",
+            "pipeline-1__cat1_B",
+            "pipeline-1__cat1_C",
+            "pipeline-1__cat2_E",
+            "pipeline-1__cat2_F",
+            "pipeline-2__int1",
+        ]
+    )
 
     assert (dataset.attribute_columns == expected_attribute_columns).all()
     assert (
@@ -139,7 +141,7 @@ def test_class_forbids_one_hot_with_multiple_targets(resources_path):
     feture_columns = df.columns[:-2]
     target_columns = df.columns[-2:]
     with pytest.raises(ValueError):
-        PandasDataset(frame_path, feture_columns, target_columns, encode_categorical_target=True)
+        PandasDataset(frame_path, feture_columns, target_columns, encode_categorical_response=True)
 
 
 def test_preprocessing_when_target_categorical(resources_path):
@@ -148,7 +150,7 @@ def test_preprocessing_when_target_categorical(resources_path):
     expected_X = df.drop(columns=["class"])
     expected_X = (expected_X - expected_X.mean(axis=0)) / expected_X.std(axis=0)
 
-    dataset = PandasDataset(frame_path, encode_categorical_target=True)
+    dataset = PandasDataset(frame_path, encode_categorical_response=True)
 
     assert dataset.y.shape == (df.shape[0], df["class"].max())
     assert_almost_equal(dataset.y.sum(axis=1).numpy(), np.ones(df.shape[0]))

@@ -26,7 +26,7 @@ class HeterogenousAttributesNetworkTrainer:
         gradient_clipping: bool,
         learning_rate: float,
         weight_decay: float,
-        early_stopping_intervals: bool = 100,
+        early_stopping_intervals: int = 100,
         check_val_every_n_epoch: int = 100,
         loss: Callable = nn.MSELoss(),
         file_logger: bool = True,
@@ -40,9 +40,9 @@ class HeterogenousAttributesNetworkTrainer:
             gradient_clipping (bool): If true, then gradient clipping is applied
             learning_rate (float): learning rate during training.
             weight_decay (float): weight decay during training.
-            early_stopping_intervals (Optional, bool): if >0, then early stopping with
+            early_stopping_intervals (Optional, int): if >0, then early stopping with
                 patience early_stopping_intervals*check_val_every_n_epoch epochs is applied.
-            check_val_every_n_epoch (Optional, bool): Specifies how often validation loss
+            check_val_every_n_epoch (Optional, int): Specifies how often validation loss
                 is checked. Defaults to 100,
             loss (Callable): Loss used during training. Defaults to MSELoss().
             file_logger (bool): if True, then file logger will write to

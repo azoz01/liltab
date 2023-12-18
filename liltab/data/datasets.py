@@ -4,7 +4,6 @@ from sklearn.discriminant_analysis import StandardScaler
 import torch
 
 from abc import ABC, abstractmethod
-from itertools import product
 from pathlib import PosixPath
 from sklearn.preprocessing import OneHotEncoder
 from torch import Tensor
@@ -26,9 +25,13 @@ class Dataset(ABC):
         attribute_columns: list[str],
         response_columns: list[str],
         preprocess_data: bool,
-        encode_categorical_target: bool,
+        encode_categorical_response: bool,
     ):
-        if response_columns is not None and len(response_columns) > 1 and encode_categorical_target:
+        if (
+            response_columns is not None
+            and len(response_columns) > 1
+            and encode_categorical_response
+        ):
             raise ValueError("One-hot encoding is supported only for single target")
 
         self.data = data
@@ -50,38 +53,36 @@ class Dataset(ABC):
         self.n_attributes = len(self.attribute_columns)
         self.n_responses = len(self.response_columns)
 
-        self.encode_categorical_target = encode_categorical_target
+        self.encode_categorical_response = encode_categorical_response
         self.preprocess_data = preprocess_data
 
         if self.preprocess_data:
             self._preprocess_data()
-        if self.encode_categorical_target:
-            self._encode_categorical_target()
+        if self.encode_categorical_response:
+            self._encode_categorical_response()
         else:
             self.y = self.df[self.response_columns].values
 
     def _preprocess_data(self):
         """
-        Standardizes data using z-score method. If encode_categorical_target = True
-        then response variable isn't scaled.
+        Performs following preprocessing:
+            * data imputation
+            * z-score scaling of numerical columns
+            * one-hot encoding categorical columns
+        If encode_categorical_response = True, then omits response column.
         """
         self.preprocessing_pipeline = get_preprocessing_pipeline()
         df_preproc = self.preprocessing_pipeline.fit_transform(self.df[self.attribute_columns])
         self.df = self.df.drop(columns=self.attribute_columns)
         self.df = pd.concat([df_preproc, self.df], axis=1)
+        self.attribute_columns = df_preproc.columns.values
 
-        attribute_columns_new = []
-        for attr_col, frame_col in product(self.attribute_columns, self.df.columns):
-            if attr_col in frame_col:
-                attribute_columns_new.append(frame_col)
-        self.attribute_columns = np.array(attribute_columns_new)
-
-        if not self.encode_categorical_target:
+        if not self.encode_categorical_response:
             self.df[self.response_columns] = StandardScaler().fit_transform(
                 self.df[self.response_columns]
             )
 
-    def _encode_categorical_target(self):
+    def _encode_categorical_response(self):
         """
         Encodes categorical response using one-hot encoding.
         """
@@ -110,7 +111,7 @@ class PandasDataset(Dataset):
         attribute_columns: list[str] = None,
         response_columns: list[str] = None,
         preprocess_data: bool = True,
-        encode_categorical_target: bool = False,
+        encode_categorical_response: bool = False,
     ):
         """
         Args:
@@ -123,7 +124,7 @@ class PandasDataset(Dataset):
             preprocess_data (bool, optional): If true, then imputes data
                 using mean strategy and standardizes using StandardScaler.
                 Defaults to True.
-            encode_categorical_target(bool, optional): if True, then target column
+            encode_categorical_response(bool, optional): if True, then target column
                 will be encoded using one-hot. Works only with single target variable.
                 Default to False.
         """
@@ -131,7 +132,7 @@ class PandasDataset(Dataset):
             data=data,
             attribute_columns=attribute_columns,
             response_columns=response_columns,
-            encode_categorical_target=encode_categorical_target,
+            encode_categorical_response=encode_categorical_response,
             preprocess_data=preprocess_data,
         )
 
@@ -160,7 +161,7 @@ class RandomFeaturesPandasDataset(Dataset):
         response_columns: list[str] = None,
         total_random_feature_sampling: bool = False,
         preprocess_data: bool = True,
-        encode_categorical_target: bool = False,
+        encode_categorical_response: bool = False,
         persist_features_iter: int = 2,
     ):
         """
@@ -180,7 +181,7 @@ class RandomFeaturesPandasDataset(Dataset):
             preprocess_data(bool, optional): If true, then imputes data
                 using mean strategy and standardizes using StandardScaler.
                 Defaults to True.
-            encode_categorical_target(bool, optional): if True, then target column
+            encode_categorical_response(bool, optional): if True, then target column
                 will be encoded using one-hot.
                 When total_random_feature_sampling=True it should be False.
                 Works only with single target variable.
@@ -193,11 +194,11 @@ class RandomFeaturesPandasDataset(Dataset):
             data=data,
             attribute_columns=attribute_columns,
             response_columns=response_columns,
-            encode_categorical_target=encode_categorical_target,
+            encode_categorical_response=encode_categorical_response,
             preprocess_data=preprocess_data,
         )
         if total_random_feature_sampling and (
-            attribute_columns is not None or response_columns or encode_categorical_target
+            attribute_columns is not None or response_columns or encode_categorical_response
         ):
             raise ValueError(
                 "total_random_feature_sampling doesn't support feature or encoding specification"
@@ -233,7 +234,7 @@ class RandomFeaturesPandasDataset(Dataset):
         self.persist_features_counter -= 1
 
         X = torch.from_numpy(self.df[self.attributes].to_numpy()).type(torch.float32)
-        if self.encode_categorical_target:
+        if self.encode_categorical_response:
             y = torch.from_numpy(self.y).type(torch.float32)
         else:
             y = torch.from_numpy(self.df[self.responses].to_numpy()).type(torch.float32)

@@ -48,7 +48,7 @@ def test_few_shot_data_loader_samples_equally_when_set_size_divisible_by_nunique
     resources_path,
 ):
     frame_path = resources_path / "random_df_3.csv"
-    dataset = PandasDataset(frame_path, encode_categorical_target=True)
+    dataset = PandasDataset(frame_path, encode_categorical_response=True)
     dataloader = FewShotDataLoader(dataset, 9, 6, n_episodes=10, sample_classes_equally=True)
 
     for episode in dataloader:
@@ -62,7 +62,7 @@ def test_few_shot_data_loader_samples_equally_works_with_random_features(
     resources_path,
 ):
     frame_path = resources_path / "random_df_3.csv"
-    dataset = RandomFeaturesPandasDataset(frame_path, encode_categorical_target=True)
+    dataset = RandomFeaturesPandasDataset(frame_path, encode_categorical_response=True)
     dataloader = FewShotDataLoader(dataset, 9, 6, n_episodes=10, sample_classes_equally=True)
 
     for episode in dataloader:
@@ -76,7 +76,7 @@ def test_few_shot_data_loader_samples_equally_when_set_size_non_divisible_by_nun
     resources_path,
 ):
     frame_path = resources_path / "random_df_3.csv"
-    dataset = PandasDataset(frame_path, encode_categorical_target=True)
+    dataset = PandasDataset(frame_path, encode_categorical_response=True)
     dataloader = FewShotDataLoader(dataset, 11, 7, n_episodes=10, sample_classes_equally=True)
 
     for episode in dataloader:
@@ -90,7 +90,7 @@ def test_few_shot_data_loader_samples_stratified(
     resources_path,
 ):
     frame_path = resources_path / "random_df_4.csv"
-    dataset = PandasDataset(frame_path, encode_categorical_target=True)
+    dataset = PandasDataset(frame_path, encode_categorical_response=True)
     dataloader = FewShotDataLoader(dataset, 6, 12, n_episodes=10, sample_classes_stratified=True)
 
     for episode in dataloader:
