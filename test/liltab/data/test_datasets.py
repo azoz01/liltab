@@ -36,12 +36,10 @@ def test_dataset_initializes_default_columns(resources_path):
 
     dataset = PandasDataset(frame_path)
 
-    assert (dataset.attribute_columns == [
-        'pipeline-2__col_1',
-        'pipeline-2__col_2',
-        'pipeline-2__col_3',
-        'pipeline-2__col_4'
-    ]).all()
+    assert (
+        dataset.attribute_columns
+        == ["pipeline-2__col_1", "pipeline-2__col_2", "pipeline-2__col_3", "pipeline-2__col_4"]
+    ).all()
     assert (dataset.response_columns == [frame_columns[-1]]).all()
 
 
@@ -56,10 +54,7 @@ def test_dataset_assigns_non_default_columns(resources_path):
         response_columns=frame_columns[4:],
     )
 
-    assert (dataset.attribute_columns == [
-        'pipeline-2__col_2',
-        'pipeline-2__col_3'
-    ]).all()
+    assert (dataset.attribute_columns == ["pipeline-2__col_2", "pipeline-2__col_3"]).all()
     assert (dataset.response_columns == frame_columns[4:]).all()
 
 
@@ -88,47 +83,53 @@ def test_indexing_dataset_returns_proper_data_with_preprocessing(resources_path)
     expected_records = df.loc[index]
     actual_X, actual_y = dataset[index]
 
-    assert_almost_equal(
-        actual_X.numpy(), expected_records.iloc[:, :4].values, decimal=2
-    )
+    assert_almost_equal(actual_X.numpy(), expected_records.iloc[:, :4].values, decimal=2)
     assert_almost_equal(
         actual_y.numpy(), expected_records[dataset.response_columns].values, decimal=2
     )
 
 
 def test_dataset_encodes_categorical_columns():
-    df = df = pd.DataFrame(data=[
-        [1, "A", "E", .1],
-        [3, "B", "E", .5],
-        [3, "A", "F", .4],
-        [1, "C", "E", .3],
-    ], columns=["int1", "cat1", "cat2", "target"])
+    df = df = pd.DataFrame(
+        data=[
+            [1, "A", "E", 0.1],
+            [3, "B", "E", 0.5],
+            [3, "A", "F", 0.4],
+            [1, "C", "E", 0.3],
+        ],
+        columns=["int1", "cat1", "cat2", "target"],
+    )
     df["cat2"].astype("category")
     dataset = PandasDataset(df)
 
     expected_attribute_columns = [
-        'pipeline-2__int1',
-        'pipeline-1__cat1_A',
-        'pipeline-1__cat1_B',
-        'pipeline-1__cat1_C',
-        'pipeline-1__cat2_E',
-        'pipeline-1__cat2_F'
+        "pipeline-2__int1",
+        "pipeline-1__cat1_A",
+        "pipeline-1__cat1_B",
+        "pipeline-1__cat1_C",
+        "pipeline-1__cat2_E",
+        "pipeline-1__cat2_F",
     ]
 
     assert (dataset.attribute_columns == expected_attribute_columns).all()
     assert (
-        dataset.df[[
-            'pipeline-1__cat1_A',
-            'pipeline-1__cat1_B',
-            'pipeline-1__cat1_C',
-            'pipeline-1__cat2_E',
-            'pipeline-1__cat2_F'
-        ]].values == np.array([
-            [1, 0, 0, 1, 0],
-            [0, 1, 0, 1, 0],
-            [1, 0, 0, 0, 1],
-            [0, 0, 1, 1, 0],
-        ])
+        dataset.df[
+            [
+                "pipeline-1__cat1_A",
+                "pipeline-1__cat1_B",
+                "pipeline-1__cat1_C",
+                "pipeline-1__cat2_E",
+                "pipeline-1__cat2_F",
+            ]
+        ].values
+        == np.array(
+            [
+                [1, 0, 0, 1, 0],
+                [0, 1, 0, 1, 0],
+                [1, 0, 0, 0, 1],
+                [0, 0, 1, 1, 0],
+            ]
+        )
     ).all()
 
 

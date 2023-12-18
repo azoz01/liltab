@@ -28,11 +28,7 @@ class Dataset(ABC):
         preprocess_data: bool,
         encode_categorical_target: bool,
     ):
-        if (
-            response_columns is not None
-            and len(response_columns) > 1
-            and encode_categorical_target
-        ):
+        if response_columns is not None and len(response_columns) > 1 and encode_categorical_target:
             raise ValueError("One-hot encoding is supported only for single target")
 
         self.data = data
@@ -42,19 +38,14 @@ class Dataset(ABC):
             self.df = data
         else:
             raise ValueError(
-                f"Data should be PosixPath, "
-                f"str or pandas.DataFrame but is {type(data)}"
+                f"Data should be PosixPath, " f"str or pandas.DataFrame but is {type(data)}"
             )
 
         self.attribute_columns = np.array(
-            attribute_columns
-            if attribute_columns is not None
-            else self.df.columns.tolist()[:-1]
+            attribute_columns if attribute_columns is not None else self.df.columns.tolist()[:-1]
         )
         self.response_columns = np.array(
-            response_columns
-            if response_columns is not None
-            else [self.df.columns.tolist()[-1]]
+            response_columns if response_columns is not None else [self.df.columns.tolist()[-1]]
         )
         self.n_attributes = len(self.attribute_columns)
         self.n_responses = len(self.response_columns)
@@ -86,7 +77,9 @@ class Dataset(ABC):
         self.attribute_columns = np.array(attribute_columns_new)
 
         if not self.encode_categorical_target:
-            self.df[self.response_columns] = StandardScaler().fit_transform(self.df[self.response_columns])        
+            self.df[self.response_columns] = StandardScaler().fit_transform(
+                self.df[self.response_columns]
+            )
 
     def _encode_categorical_target(self):
         """
@@ -142,9 +135,7 @@ class PandasDataset(Dataset):
             preprocess_data=preprocess_data,
         )
 
-        self.X = torch.from_numpy(self.df[self.attribute_columns].to_numpy()).type(
-            torch.float32
-        )
+        self.X = torch.from_numpy(self.df[self.attribute_columns].to_numpy()).type(torch.float32)
         self.y = torch.from_numpy(self.y).type(torch.float32)
 
     def __getitem__(self, idx: list[int]) -> tuple[Tensor, Tensor]:
@@ -206,9 +197,7 @@ class RandomFeaturesPandasDataset(Dataset):
             preprocess_data=preprocess_data,
         )
         if total_random_feature_sampling and (
-            attribute_columns is not None
-            or response_columns
-            or encode_categorical_target
+            attribute_columns is not None or response_columns or encode_categorical_target
         ):
             raise ValueError(
                 "total_random_feature_sampling doesn't support feature or encoding specification"
@@ -254,12 +243,8 @@ class RandomFeaturesPandasDataset(Dataset):
     def _get_features_from_selected_columns(self) -> tuple[int, int]:
         attributes_size = np.random.randint(low=1, high=self.n_attributes + 1)
         responses_size = np.random.randint(low=1, high=self.n_responses + 1)
-        attributes_idx = np.random.choice(
-            len(self.attribute_columns), attributes_size
-        ).tolist()
-        responses_idx = np.random.choice(
-            len(self.response_columns), responses_size
-        ).tolist()
+        attributes_idx = np.random.choice(len(self.attribute_columns), attributes_size).tolist()
+        responses_idx = np.random.choice(len(self.response_columns), responses_size).tolist()
 
         return attributes_idx, responses_idx
 
