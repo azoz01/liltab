@@ -172,6 +172,7 @@ class ComposedDataLoader:
         dataloaders: list[Iterable],
         batch_size: int = 32,
         num_batches: int = 1,
+        return_dataset_indicator: float = True,
     ):
         """
         Args:
@@ -184,6 +185,7 @@ class ComposedDataLoader:
         """
         self.dataloaders = dataloaders
         self.batch_size = batch_size
+        self.return_dataset_indicator = return_dataset_indicator
 
         self.counter = 0
         self.num_batches = num_batches
@@ -198,21 +200,33 @@ class ComposedDataLoader:
         self.counter += 1
         return [self._get_single_example() for _ in range(self.batch_size)]
 
-    def _get_single_example(self) -> tuple[Tensor, Tensor, Tensor, Tensor]:
+    def _get_single_example(
+        self,
+    ) -> Union[
+        tuple[Tensor, Tensor, Tensor, Tensor], tuple[int, tuple[Tensor, Tensor, Tensor, Tensor]]
+    ]:
         """
         Returns support and query sets from one DataLoaders from
-        randomly chosen from passed dataloaders.
+        randomly chosen from passed dataloaders. If return_dataset_indicator = True
+        then id of the dataset is also returned.
 
         Returns:
-            tuple[Tensor, Tensor, Tensor, Tensor]:
-                (X_support, y_support, X_query, y_query)
+            Union[
+                tuple[Tensor, Tensor, Tensor, Tensor],
+                tuple[int, tuple[Tensor, Tensor, Tensor, Tensor]]
+            ]
         """
         dataloader_has_next = False
+        dataloader_idx = None
         while not dataloader_has_next:
             dataloader_idx = np.random.choice(self.n_dataloaders, 1)[0]
             dataloader = self.dataloaders[dataloader_idx]
             dataloader_has_next = dataloader.has_next()
-        return next(dataloader)
+
+        if self.return_dataset_indicator:
+            return dataloader_idx, next(dataloader)
+        else:
+            return next(dataloader)
 
 
 class RepeatableOutputComposedDataLoader:
@@ -223,7 +237,9 @@ class RepeatableOutputComposedDataLoader:
     of data. Useful with test/validation datasets.
     """
 
-    def __init__(self, dataloaders: list[Iterable], *args, **kwargs):
+    def __init__(
+        self, dataloaders: list[Iterable], return_dataset_indicator: bool = True, *args, **kwargs
+    ):
         """
         Args:
             dataloaders (list[Iterable]): list of
@@ -233,6 +249,7 @@ class RepeatableOutputComposedDataLoader:
 
         self.batch_counter = 0
         self.n_dataloaders = len(dataloaders)
+        self.return_dataset_indicator = return_dataset_indicator
 
         self.loaded = False
         self.cache = OrderedDict()
@@ -246,4 +263,7 @@ class RepeatableOutputComposedDataLoader:
         if self.loaded:
             raise StopIteration()
         self.loaded = True
-        return [sample for _, sample in self.cache.items()]
+        if self.return_dataset_indicator:
+            return list(self.cache.items())
+        else:
+            return [sample for _, sample in self.cache.items()]

@@ -179,6 +179,7 @@ def test_composed_data_loader_returns_from_all_loaders_properly(
             ),
         ],
         batch_size=n_episodes,
+        return_dataset_indicator=False,
     )
     loaded_dataset = list(dataloader)
     batches_lens = np.array(list(map(lambda t: t[0][1].shape[0], loaded_dataset[0])))
@@ -208,6 +209,7 @@ def test_composed_data_loader_returns_from_all_loaders_almost_equally(
                 ),
             ],
             batch_size=batch_size,
+            return_dataset_indicator=False,
         )
         batch = list(dataloader)[0]
         batches_lens = np.array(list(map(lambda t: t[0][1].shape[0], batch)))
@@ -232,7 +234,8 @@ def test_repeatable_output_composed_data_loader_repeat_samples(resources_path, u
                 6,
                 n_episodes=100,
             ),
-        ]
+        ],
+        return_dataset_indicator=False,
     )
 
     dataloader_1 = list(dataloader)[0]
