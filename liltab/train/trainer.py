@@ -11,7 +11,7 @@ from liltab.data.dataloaders import (
     ComposedDataLoader,
     RepeatableOutputComposedDataLoader,
 )
-from .utils import LightningWrapper
+from .utils import LightningWrapper, LightningEncoderWrapper
 from .logger import TensorBoardLogger, FileLogger
 
 
@@ -26,6 +26,7 @@ class HeterogenousAttributesNetworkTrainer:
         gradient_clipping: bool,
         learning_rate: float,
         weight_decay: float,
+        representation_penalty_weight: float = 0,
         early_stopping_intervals: int = 100,
         check_val_every_n_epoch: int = 100,
         loss: Callable = nn.MSELoss(),
@@ -112,6 +113,7 @@ class HeterogenousAttributesNetworkTrainer:
             check_val_every_n_epoch=check_val_every_n_epoch,
             callbacks=callbacks,
         )
+        self.representation_penalty_weight = representation_penalty_weight
         self.learning_rate = learning_rate
         self.weight_decay = weight_decay
         self.loss = loss
@@ -143,11 +145,40 @@ class HeterogenousAttributesNetworkTrainer:
             model,
             learning_rate=self.learning_rate,
             weight_decay=self.weight_decay,
+            representation_penalty_weight=self.representation_penalty_weight,
             loss=self.loss,
         )
         self.trainer.fit(model_wrapper, train_loader, val_loader)
         test_results = self.trainer.test(model_wrapper, test_loader)
         return model_wrapper, test_results
+
+    def pretrain_encoder(
+        self,
+        model: HeterogenousAttributesNetwork,
+        train_loader: ComposedDataLoader | RepeatableOutputComposedDataLoader,
+        val_loader: ComposedDataLoader | RepeatableOutputComposedDataLoader,
+    ) -> tuple[LightningWrapper, list[dict[str, float]]]:
+        """
+        Method used to pretrain encoder.
+
+        Args:
+            model (HeterogenousAttributesNetwork): model to train
+            train_loader (ComposedDataLoader | RepeatableOutputComposedDataLoader):
+                loader withTrainingData
+            val_loader (ComposedDataLoader | RepeatableOutputComposedDataLoader):
+                loader with validation data
+
+        Returns:
+            tuple[HeterogenousAttributesNetwork, list[dict[str, float]]]:
+                trained network with metrics on test set.
+        """
+        encoder_wrapper = LightningEncoderWrapper(
+            model,
+            learning_rate=self.learning_rate,
+            weight_decay=self.weight_decay,
+        )
+        self.trainer.fit(encoder_wrapper, train_loader, val_loader)
+        return encoder_wrapper
 
 
 class LoggerCallback(Callback):
