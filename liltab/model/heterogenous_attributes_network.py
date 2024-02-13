@@ -2,7 +2,7 @@ import torch
 import torch.nn.functional as F
 
 from torch import nn, Tensor
-from typing import Callable
+from typing import Callable, Dict, Union
 from .utils import FeedForwardNetwork
 
 
@@ -133,7 +133,35 @@ class HeterogenousAttributesNetwork(nn.Module):
         )
         self.is_classifier = is_classifier
 
-    def forward(self, X_support: Tensor, y_support: Tensor, X_query: Tensor) -> Tensor:
+    def forward(
+        self, X_support: Tensor, y_support: Tensor, X_query: Tensor, return_full_trace: bool = False
+    ) -> Union[Tensor, Dict[str, Tensor]]:
+        """
+        Returns prediction of the network. If return_full_trace = True, then full trace of
+        prediction is returned.
+        Args:
+            X_support (Tensor): Support set attributes
+                with shape (n_support_observations, n_attributes)
+            y_support (Tensor): Support set responses
+                with shape (n_support_observations, n_responses)
+            X_query (Tensor): Query set attributes
+                with shape (n_query_observations, n_attributes)
+            return_full_trace (bool): if True, then instead of vanilla prediction,
+                the trace of prediction i.e. intermediate tensors are returned in
+                for of Dict[str, Tensor].
+        Returns:
+            Union[Tensor, Dict[str, Tensor]]: Inferred query set responses
+                or full trace of predictions.
+        """
+        prediction_trace = self._forward_with_full_trace(X_support, y_support, X_query)
+        if return_full_trace:
+            return prediction_trace
+        else:
+            return prediction_trace["prediction"]
+
+    def _forward_with_full_trace(
+        self, X_support: Tensor, y_support: Tensor, X_query: Tensor
+    ) -> Dict[str, Tensor]:
         """
         Inference function of network. Inference is done in following steps:
             1. Calculate initial representation for all atrributes and responses
@@ -146,6 +174,9 @@ class HeterogenousAttributesNetwork(nn.Module):
             5. Make prediction based on representations of support set attributes and
                 responses and query set attributes representations.
         All representations calculations are done using feed forward neural networks.
+        As a result it returns trace from inference i.e. all intermediate tensors in form
+        of a dictionary.
+
         Args:
             X_support (Tensor): Support set attributes
                 with shape (n_support_observations, n_attributes)
@@ -154,7 +185,13 @@ class HeterogenousAttributesNetwork(nn.Module):
             X_query (Tensor): Query set attributes
                 with shape (n_query_observations, n_attributes)
         Returns:
-            Tensor: Inferred query set responses shaped (n_query_obervations, n_responses)
+            Dict[str, Tensor]: Full trace of inference:
+                attributes_initial_representation - initial representation of attributes.
+                responses_initial_representation - initial representation of responses.
+                support_set_representation - representation of support set.
+                attributes_representation - final representation of attributes.
+                responses_representation - final representation of responses.
+                prediction - final prediction i.e. predicted y_query.
         """
         attributes_initial_representation = self._calculate_initial_features_representation(
             self.initial_features_encoding_network,
@@ -206,7 +243,35 @@ class HeterogenousAttributesNetwork(nn.Module):
                 X_query,
             )
 
-        return prediction
+        return {
+            "attributes_initial_representation": attributes_initial_representation,
+            "responses_initial_representation": responses_initial_representation,
+            "support_set_representation": support_set_representation,
+            "attributes_representation": attributes_representation,
+            "responses_representation": responses_representation,
+            "prediction": prediction,
+        }
+
+    def encode_support_set(self, X_support: Tensor, y_support: Tensor) -> Tensor:
+        attributes_initial_representation = self._calculate_initial_features_representation(
+            self.initial_features_encoding_network,
+            self.initial_features_representation_network,
+            X_support,
+        )
+        responses_initial_representation = self._calculate_initial_features_representation(
+            self.initial_features_encoding_network,
+            self.initial_features_representation_network,
+            y_support,
+        )
+        support_set_representation = self._calculate_support_set_representation(
+            self.interaction_encoding_network,
+            self.interaction_representation_network,
+            X_support,
+            attributes_initial_representation,
+            y_support,
+            responses_initial_representation,
+        )
+        return support_set_representation
 
     def _calculate_initial_features_representation(
         self,

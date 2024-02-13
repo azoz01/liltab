@@ -66,6 +66,7 @@ def main():
         hidden_size=config["hidden_size"],
         dropout_rate=config["dropout_rate"],
         is_classifier=config["is_classifier"],
+        inner_activation_function=nn.ReLU(),
     )
 
     results_path = Path("results") / config["name"]

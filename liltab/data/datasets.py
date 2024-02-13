@@ -37,7 +37,7 @@ class Dataset(ABC):
         self.data = data
         if type(data) in [str, PosixPath]:
             self.df = pd.read_csv(data)
-        elif type(data) == pd.DataFrame:
+        elif type(data) is pd.DataFrame:
             self.df = data
         else:
             raise ValueError(
